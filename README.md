@@ -1,86 +1,100 @@
-# Example README
+# Spatial-Temporal Analysis of Council Decisions on Development Plans
+
+## 📋 Project Proposal
+
+See detailed project proposal: [PROPOSAL.md](PROPOSAL.md)
+
+---
+
+## Project Overview
+
+This project investigates the spatial and temporal patterns of municipal council decisions related to development plans (Bebauungspläne) in [CITY X]. Using council meeting information combined with development plan geodata, we analyze where and when planning decisions occur over a [TIME PERIOD] period.
+
+---
+
+## Research Questions
+
+> **"Where and when are development plans (Bebauungspläne) politically negotiated in [CITY]?"**
 
 
-# The global temperature-CO<sub>2</sub> spiral
+---
 
-
-## Project overview
-
-Contains data and code for creating:
-
-- Homogenised time series of atmospheric CO<sub>2</sub> and temperature from multiple sources, together covering the past (800 ka), until today, and the future (climate scenario to 2100). Outputs (homogenised time series) are stored in `data/`
-- Visualisation of the parallel evolution of temperature and CO<sub>2</sub>. Outputs (figure files) are stored in `figures/`.
-
-The full workflow can be reproduced by running `vignettes/past_to_future_CO2_temperature.Rmd`.
-
-## Data
-
-The following data were obtained from external sources and are contained in this repository, stored in `data-raw/`.
-
-### CO<sub>2</sub>
-
-- Bereiter et al., 2015
-- Meinshausen et al., 2011
-
-### Temperature (based on d<sup>18</sup>O)
-
-- Jouzel et al., 2007
-- Neukom et al., 2009
-
-## Project structure
+## Project Structure
 
 ```
-├── README.md                <- The top-level README includes instructions to use this repository
-|                               and the project proposal for the Proseminar
+├── README.md                      <- This file: project overview and instructions
+├── PROPOSAL.md                    <- Detailed project proposal
 │
-├── inaug_demo.Rproj.        <- R project file
-|
-├── .gitignore               <- file indicating which files should be ignored when pushing
-|
-├── data-raw/                <- folder for data downloaded from the external sources, unprocessed
-|
-├── data/                    <- folder for data produced by the repository
+├── council_decisions_analysis.Rproj  <- R project file
 │
-├── figures/                 <- folder for figure files produced by the repository
+├── .gitignore                     <- Files to exclude from version control
+├── renv.lock                      <- Package dependency lock file
 │
-├── vignettes/               <- R markdown files
-│   ├── past_to_future_co2_temperature.Rmd  <- Contains the full workflow of data read, processing, and visualisation.
-│   └── references.bib       <- bibliography file
-|
-└── R/                       <- R functions used in the project, contains one function per script
+├── data-raw/                      <- Raw data from external sources (NOT in git)
+│   ├── README.md                  <- Data collection protocol
+│   ├── council_meetings/          <- Downloaded council information
+│   └── geodata/                   <- Shapefiles, GeoJSON files
+│
+├── data/                          <- Processed, analysis-ready data (IN git)
+│   ├── README.md                  <- Data dictionary
+│   ├── council_bplan_decisions.csv       <- Main analysis dataset
+│   ├── council_bplan_decisions.geojson   <- Georeferenced decisions
+│   └── districts.geojson                 <- District boundaries
+│
+├── R/                             <- Custom R functions
+│   ├── load_data.R                <- Data loading utilities
+│   ├── geocoding.R                <- Geocoding functions
+│   ├── spatial_analysis.R         <- Moran's I, clustering functions
+│   └── visualization.R            <- Custom plotting functions
+│
+├── analysis/                      <- Analysis scripts (numbered workflow)
+│   ├── 01_data_processing.R
+│   └── 02
+│
+├── vignettes/                     <- R Markdown reports
+│   ├── analysis.Rmd               <- Main report (full workflow)
+│   ├── references.bib             <- Bibliography
+│   └── apa-7th-edition.csl        <- Citation style
+│
+├── outputs/                       <- Generated outputs (NOT in git)
+│   ├── figures/                   <- All plots and maps
+│   └── tables/                    <- Results tables
+│
+└── figures/                       <- Publication-ready figures (IN git)
+    ├── fig1_overview_map.png
+    ├── fig2_temporal_trend.png
+    ├── fig3_spatial_clusters.png
+    ├── fig4_thematic_distribution.png
+    └── fig5_renewal_comparison.png
 ```
+
+---
 
 ## Dependencies
 
-Install all required R libraries by:
-```r
-use_pkgs <- c(
-  "dplyr",
-  "tidyr",
-  "purrr",
-  "lubridate",
-  "readr",
-  "ggplot2",
-  "gganimate",
-  "gifski",
-  "here",
-  "readr"
-  )
-
-new_pkgs <- use_pkgs[!(use_pkgs %in% installed.packages()[, "Package"])]
-if (length(new_pkgs) > 0) install.packages(new_pkgs)
-```
+---
 
 ## License
 
-This is published under a [CC BY-SA license](https://creativecommons.org/licenses/by-sa/4.0/).
+- **Code:** MIT License
+- **Documentation:** CC-BY 4.0
 
-## References
+---
 
-Bereiter, B., Eggleston, S., Schmitt, J., Nehrbass‐Ahles, C., Stocker, T. F., Fischer, H., Kipfstuhl, S., and Chappellaz, J.: Revision of the EPICA Dome C CO<sub>2</sub> record from 800 to 600 kyr before present, Geophysical Research Letters, 42, 542–549, https://doi.org/10.1002/2014GL061957, 2015.
+## Contact
 
-Jouzel, J., Masson-Delmotte, V., Cattani, O., Dreyfus, G., Falourd, S., Hoffmann, G., Minster, B., Nouet, J., Barnola, J. M., Chappellaz, J., Fischer, H., Gallet, J. C., Johnsen, S., Leuenberger, M., Loulergue, L., Luethi, D., Oerter, H., Parrenin, F., Raisbeck, G., Raynaud, D., Schilt, A., Schwander, J., Selmo, E., Souchez, R., Spahni, R., Stauffer, B., Steffensen, J. P., Stenni, B., Stocker, T. F., Tison, J. L., Werner, M., and Wolff, E. W.: Orbital and Millennial Antarctic Climate Variability over the Past 800,000 Years, Science, 317, 793–796, https://doi.org/10.1126/science.1141038, 2007.
+**Author:** [Your Name]
+**Email:** [your.email@unibe.ch]
 
-Meinshausen, M., S. J. Smith, K. V. Calvin, J. S. Daniel, M. L. T. Kainuma, J.-F. Lamarque, K. Matsumoto, S. A. Montzka, S. C. B. Raper, K. Riahi, A. M. Thomson, G. J. M. Velders and D. van Vuuren (2011). "The RCP Greenhouse Gas Concentrations and their Extension from 1765 to 2300." Climatic Change (Special Issue), DOI: 10.1007/s10584-011-0156-z, freely available online (PDF) (HTML)
+---
 
-Neukom, R., Barboza, L. A., Erb, M. P., Shi, F., Emile-Geay, J., Evans, M. N., Franke, J., Kaufman, D. S., Lücke, L., Rehfeld, K., Schurer, A., Zhu, F., Brönnimann, S., Hakim, G. J., Henley, B. J., Ljungqvist, F. C., McKay, N., Valler, V., von Gunten, L., and PAGES 2k Consortium: Consistent multidecadal variability in global temperature reconstructions and simulations over the Common Era, Nat. Geosci., 12, 643–649, https://doi.org/10.1038/s41561-019-0400-0, 2019.
+## Acknowledgments
+
+---
+
+## Key References
+
+
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![R Version](https://img.shields.io/badge/R-%3E%3D%204.3.0-blue.svg)](https://www.r-project.org/)
