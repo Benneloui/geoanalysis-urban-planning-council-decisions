@@ -1,12 +1,12 @@
 # Spatial-Temporal Analysis of Council Decisions on Development Plans
 
-See detailed project proposal: [PROPOSAL.md](PROPOSAL.md)
+See detailed project proposal: [Proposal.md](Proposal.md)
 
 This project investigates the spatial and temporal patterns of municipal council decisions related to development plans (Bebauungspläne) in [CITY X]. Using council meeting information combined with development plan geodata, we analyze where and when planning decisions occur over a [TIME PERIOD] period.
 
 ## Research Questions
 
-> **"Where and when are development plans (Bebauungspläne) politically negotiated in [CITY]?"**
+> "Where and when is geographically relevant information, such as development plans in [CITY X], negotiated politically? What anomalies does a spatial-temporal analysis of council information [PERIOD Y] reveal?"
 
 ## Project Structure
 
