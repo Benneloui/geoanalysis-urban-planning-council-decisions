@@ -19,23 +19,30 @@ Urban development planning is a core function of local government, directly affe
 - **Democratic representation:** Are all neighborhoods equally represented in planning decisions?
 - **Policy implementation:** How do political timelines align with planning goals?
 
+
 Existing research has established that:
+
 - Municipal council decisions are increasingly digitized and accessible through standards like OParl (Germany) or similar e-government initiatives
 - Development plans are well-documented in municipal geoportals
 - Urban planning processes involve spatial inequalities
 
+
 Despite this foundation, critical gaps remain:
+
 - **No comprehensive spatial analysis** of where council planning decisions concentrate within cities
 - **Limited understanding** of temporal dynamics in planning activity (trends, acceleration, seasonal patterns)
 - **Unclear relationship** between designated urban renewal areas and actual political prioritization
 - **Absence of reproducible methods** for analyzing council information spatially
 
+
 Germany's recent "Bauturbo" policies aim to accelerate development approvals, but their effectiveness may depend on underlying patterns of political attention and administrative capacity. Understanding where and when councils already focus planning efforts provides baseline evidence for evaluating policy impacts. Additionally, the methodology addresses the growing availability of structured municipal data (e-government platforms), demonstrating how open data can inform urban research.
 
 ## 3. Objective
 
+
 **Research Quesiton:**
-> "Where and when is geographically relevant information, such as development plans in [CITY X], negotiated politically? What anomalies does a spatial-temporal analysis of council information [PERIOD Y] reveal?
+> "Where and when is geographically relevant information, such as development plans in City X, negotiated politically? What anomalies does a spatial-temporal analysis of City Council information in period Y reveal? How does the ratio of decisions in planned and unplanned areas vary?"
+
 
 This descriptive-exploratory question investigates:
 1. **Spatial concentration:** In which districts do development plan decisions cluster?
