@@ -1,9 +1,13 @@
 # Project Proposal: Spatial-Temporal Analysis of Council Decisions on Development Plans
 
 Proseminar - Applied Geodata Science
+
 University of Bern
+
 **Date:** Fr. 17 October 2025
+
 **Author:** Benedikt Pilgram
+
 **Supervisor:** Prof. Benjamin Stocker
 
 ## 1. Summary
@@ -147,8 +151,9 @@ This descriptive-exploratory question investigates:
 
 ## Contact Information
 
-Name: [Benedikt Pilgram]
-Email: [benedikt.pilgram@student.unibe.ch]
+Name: Benedikt Pilgram
+
+Email: benedikt.pilgram@student.unibe.ch
 
 
 ---

@@ -64,6 +64,7 @@ This project investigates the spatial and temporal patterns of municipal council
 
 ## Contact
 Benedikt Pilgram
+
 benedikt.pilgram@student.unibe.ch
 
 
