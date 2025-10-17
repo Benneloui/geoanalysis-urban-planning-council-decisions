@@ -1,23 +1,12 @@
 # Spatial-Temporal Analysis of Council Decisions on Development Plans
 
-## 📋 Project Proposal
-
 See detailed project proposal: [PROPOSAL.md](PROPOSAL.md)
 
----
-
-## Project Overview
-
 This project investigates the spatial and temporal patterns of municipal council decisions related to development plans (Bebauungspläne) in [CITY X]. Using council meeting information combined with development plan geodata, we analyze where and when planning decisions occur over a [TIME PERIOD] period.
-
----
 
 ## Research Questions
 
 > **"Where and when are development plans (Bebauungspläne) politically negotiated in [CITY]?"**
-
-
----
 
 ## Project Structure
 
@@ -68,33 +57,23 @@ This project investigates the spatial and temporal patterns of municipal council
     └── fig5_renewal_comparison.png
 ```
 
----
 
 ## Dependencies
 
----
-
-## License
-
-- **Code:** MIT License
-- **Documentation:** CC-BY 4.0
-
----
 
 ## Contact
 
-**Author:** [Your Name]
-**Email:** [your.email@unibe.ch]
+**Author:** [Benedikt Pilgram]
+**Email:** [benedikt.pilgram@student.unibe.ch]
 
----
 
 ## Acknowledgments
 
----
 
 ## Key References
 
-
-
+## License
+- **Code:** MIT License
+- **Documentation:** CC-BY 4.0
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R Version](https://img.shields.io/badge/R-%3E%3D%204.3.0-blue.svg)](https://www.r-project.org/)
