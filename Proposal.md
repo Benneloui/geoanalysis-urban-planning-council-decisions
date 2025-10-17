@@ -1,18 +1,16 @@
 # Project Proposal: Spatial-Temporal Analysis of Council Decisions on Development Plans
 
-**Proseminar - Applied Geodata Science**  
-**University of Bern**  
-**Date:** October 17, 2025  
-**Author:** [Benedikt Pilgram]  
-**Supervisor:** [Prof. Benjamin Stocker]
+Proseminar - Applied Geodata Science
+University of Bern
+**Date:** Fr. 17 October 2025
+**Author:** Benedikt Pilgram
+**Supervisor:** Prof. Benjamin Stocker
 
 ## 1. Summary
 
 This project investigates the spatial and temporal patterns of municipal council decisions related to development plans (Bebauungspläne) in a selected German or Swiss city. Using council meeting information from either OParl APIs or manual collection, combined with development plan geodata, I analyze where and when planning decisions occur over a time period. The reproducible R-based workflow can be transferred to other municipalities, contributing methodologically to the intersection of e-government data and spatial planning research.
 
 ## 2. Background and Motivation
-
-Why This Project is Important:
 
 Urban development planning is a core function of local government, directly affecting citizens' built environment, housing availability, and neighborhood development. Municipal councils (Gemeinderat, Stadtrat) play a critical decision-making role in adopting, modifying, or rejecting development plans (Bebauungspläne). However, the spatial and temporal patterns of these political decisions remain largely intrasperent, despite their importance for understanding:
 
@@ -21,14 +19,10 @@ Urban development planning is a core function of local government, directly affe
 - **Democratic representation:** Are all neighborhoods equally represented in planning decisions?
 - **Policy implementation:** How do political timelines align with planning goals?
 
-What is Known:
-
 Existing research has established that:
 - Municipal council decisions are increasingly digitized and accessible through standards like OParl (Germany) or similar e-government initiatives
 - Development plans are well-documented in municipal geoportals
 - Urban planning processes involve spatial inequalities
-
-What is Unknown:
 
 Despite this foundation, critical gaps remain:
 - **No comprehensive spatial analysis** of where council planning decisions concentrate within cities
@@ -36,13 +30,11 @@ Despite this foundation, critical gaps remain:
 - **Unclear relationship** between designated urban renewal areas and actual political prioritization
 - **Absence of reproducible methods** for analyzing council information spatially
 
-Relevance to Current Context:
-
 Germany's recent "Bauturbo" policies aim to accelerate development approvals, but their effectiveness may depend on underlying patterns of political attention and administrative capacity. Understanding where and when councils already focus planning efforts provides baseline evidence for evaluating policy impacts. Additionally, the methodology addresses the growing availability of structured municipal data (e-government platforms), demonstrating how open data can inform urban research.
 
 ## 3. Objective
 
-Research
+**Research Quesiton:**
 > "Where and when is geographically relevant information, such as development plans in [CITY X], negotiated politically? What anomalies does a spatial-temporal analysis of council information [PERIOD Y] reveal?
 
 This descriptive-exploratory question investigates:
@@ -53,7 +45,7 @@ This descriptive-exploratory question investigates:
 
 ## 4. Implementation
 
-### Data Sources - Dataset 1: Council Meeting Information
+#### Data Sources - Dataset 1: Council Meeting Information
 
 **Primary Option - OParl API:**
 - **Description:** Standardized API for accessing German municipal council information
@@ -94,12 +86,12 @@ This descriptive-exploratory question investigates:
 - Geocoding accuracy too low
 - Spatial join with development plans unsuccessful
 
-**Probability:** Medium  
+**Probability:** Medium
 **Impact:** High
 
 **Mitigation Strategies:**
 1. **Early testing:** Test georeferencing on 20-document sample (Week 3)
-2. **Multiple methods:** 
+2. **Multiple methods:**
    - Direct address extraction + geocoding
    - Plan name matching with B-Plan registry
    - District name extraction (coarser but more reliable)
@@ -115,7 +107,7 @@ This descriptive-exploratory question investigates:
 **Risk Description:**
 - Data too sparse for meaningful spatial analysis
 
-**Probability:** Low (there's almost always some pattern)  
+**Probability:** Low (there's almost always some pattern)
 **Impact:** Medium
 
 **Mitigation Strategies:**
@@ -131,7 +123,7 @@ This descriptive-exploratory question investigates:
 - Technical difficulties slow analysis
 - Writing takes more time than planned
 
-**Probability:** High (common in research)  
+**Probability:** High (common in research)
 **Impact:** Medium
 
 **Mitigation Strategies:**

@@ -24,6 +24,36 @@ wheels/
 *.egg
 MANIFEST
 
+# R-specific
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Output files (regenerated)
+outputs/
+*.html
+*.pdf
+*_cache/
+*_files/
+
+# Large data files (too big for git)
+data-raw/
+*.zip
+*.tar.gz
+*.shp
+*.dbf
+*.prj
+*.shx
+*.cpg
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*~
+._*
+
 # IDE-spezifische Dateien
 .idea/
 .vscode/
