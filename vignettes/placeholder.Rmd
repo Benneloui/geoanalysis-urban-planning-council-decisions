@@ -1,0 +1,87 @@
+cat > vignettes/analysis.Rmd << 'EOF'
+---
+title: "Where and When: Spatial-Temporal Analysis of Council Decisions"
+subtitle: "Development Plan Politics in [CITY NAME]"
+author: "Benedikt Pilgram"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    code_folding: hide
+    theme: flatly
+    highlight: tango
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+# Load required packages
+library(tidyverse)
+library(sf)
+library(tmap)
+library(lubridate)
+```
+
+# Abstract
+
+[150-200 words summarizing research question, methods, key findings, and implications]
+
+# 1. Introduction
+
+## 1.1 Background
+
+[Context about urban planning, development plans, council role]
+
+## 1.2 Research Question
+
+> "Where and when is geographically relevant information, such as development plans in [CITY X], negotiated politically?"
+
+## 1.3 Objectives
+
+[What this study aims to achieve]
+
+# 2. Study Area
+
+[Description of selected city]
+
+# 3. Data and Methods
+
+## 3.1 Data Sources
+
+### Council Information
+[Details]
+
+### Development Plans
+[Details]
+
+## 3.2 Methods
+
+### Spatial Analysis
+[Methods description]
+
+### Temporal Analysis
+[Methods description]
+
+# 4. Results
+
+[Results with visualizations]
+
+# 5. Discussion
+
+[Interpretation of results]
+
+# 6. Conclusion
+
+[Summary and future directions]
+
+# References
+
+[Bibliography - to be added]
+EOF

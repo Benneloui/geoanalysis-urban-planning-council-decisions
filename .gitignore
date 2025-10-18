@@ -25,6 +25,7 @@ wheels/
 MANIFEST
 
 # R-specific
+renv/library/
 .Rproj.user
 .Rhistory
 .RData

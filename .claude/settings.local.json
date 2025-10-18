@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat /Users/benedikt.pilgram/Code/Geomodelierung/data-raw/README.md)",
+      "Bash(tree -L 2 -I 'node_modules|renv' /Users/benedikt.pilgram/Code/Geomodelierung)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
