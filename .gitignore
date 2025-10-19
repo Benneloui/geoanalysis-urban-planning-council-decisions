@@ -31,6 +31,8 @@ renv/library/
 .RData
 .Ruserdata
 *.Rproj
+renc.lock
+renv
 
 # Output files (regenerated)
 outputs/
@@ -60,3 +62,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Other
+.claude

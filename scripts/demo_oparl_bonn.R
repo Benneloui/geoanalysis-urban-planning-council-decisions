@@ -549,9 +549,9 @@ map_plot <- ggplot(bplan_sf) +
 
 # Save plots (lighter settings in demo mode)
 PNG_DPI <- if (DEMO_MODE) 120 else 300
-ggsave("temporal_trend.png", temporal_plot, width = 10, height = 6, dpi = PNG_DPI)
-ggsave("district_frequency.png", district_plot, width = 10, height = 8, dpi = PNG_DPI)
-ggsave("spatial_map.png", map_plot, width = 10, height = 8, dpi = PNG_DPI)
+ggsave("./output/figures/temporal_trend.png", temporal_plot, width = 10, height = 6, dpi = PNG_DPI)
+ggsave("./output/figures/district_frequency.png", district_plot, width = 10, height = 8, dpi = PNG_DPI)
+ggsave("./output/figures/spatial_map.png", map_plot, width = 10, height = 8, dpi = PNG_DPI)
 
 cat("✅ Visualizations saved!\n\n")
 
