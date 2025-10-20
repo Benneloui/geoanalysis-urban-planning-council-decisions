@@ -30,7 +30,6 @@ renv/library/
 .Rhistory
 .RData
 .Ruserdata
-*.Rproj
 renc.lock
 renv
 
