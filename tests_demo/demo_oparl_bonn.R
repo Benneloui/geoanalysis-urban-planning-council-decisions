@@ -24,7 +24,7 @@ source("R/oparl_api.R")
 source("R/text_analysis.R")
 source("R/geocoding.R")
 source("R/visualization.R")
-source("scripts/utils/synthetic_data.R")
+source("tests_demo/utils/synthetic_data.R")
 
 # --------------------------------------------------------------------------
 # Demo Configuration
@@ -278,11 +278,11 @@ map_plot <- plot_spatial_map(
   subtitle = "Each point represents a council decision on a development plan"
 )
 
-# Save plots
+# Save plots with demo and city prefix
 PNG_DPI <- if (DEMO_MODE) 120 else 300
-save_plot(temporal_plot, "temporal_trend.png", dpi = PNG_DPI)
-save_plot(district_plot, "district_frequency.png", width = 10, height = 8, dpi = PNG_DPI)
-save_plot(map_plot, "spatial_map.png", width = 10, height = 8, dpi = PNG_DPI)
+save_plot(temporal_plot, "demo_bonn_temporal_trend.png", dpi = PNG_DPI)
+save_plot(district_plot, "demo_bonn_district_frequency.png", width = 10, height = 8, dpi = PNG_DPI)
+save_plot(map_plot, "demo_bonn_spatial_map.png", width = 10, height = 8, dpi = PNG_DPI)
 
 cat("\n✅ Visualizations saved!\n\n")
 
@@ -345,7 +345,7 @@ cat("   6. Create interactive visualizations (leaflet maps)\n\n")
 
 print_separator()
 cat("📁 Files created:\n")
-cat("   - outputs/figures/temporal_trend.png\n")
-cat("   - outputs/figures/district_frequency.png\n")
-cat("   - outputs/figures/spatial_map.png\n")
+cat("   - outputs/figures/demo_bonn_temporal_trend.png\n")
+cat("   - outputs/figures/demo_bonn_district_frequency.png\n")
+cat("   - outputs/figures/demo_bonn_spatial_map.png\n")
 print_separator()

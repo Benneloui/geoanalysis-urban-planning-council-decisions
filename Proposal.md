@@ -4,8 +4,6 @@ Proseminar - Applied Geodata Science
 
 University of Bern
 
-**Date:** Fr. 17 October 2025
-
 **Author:** Benedikt Pilgram
 
 **Supervisor:** Prof. Benjamin Stocker
@@ -77,7 +75,31 @@ This descriptive-exploratory question investigates:
 - Source: Census data, statistical yearbooks
 - Variables: Population density, income, demographics
 
-## 5. Timeline
+## 5. Proof-of-Concept Demo
+
+**Demo Implementation:** A working proof-of-concept demonstration has been created using the city of Bonn as a test case. The demo (`tests_demo/demo_oparl_bonn.R`) validates the technical feasibility of the project by:
+
+1. **Connecting to OParl API:** Successfully retrieves council meeting data from Bonn's public OParl endpoint
+2. **Extracting Bebauungsplan references:** Uses text mining to identify development plan discussions in agenda items
+3. **Geocoding locations:** Converts district names to coordinates for spatial analysis
+4. **Creating visualizations:** Generates three types of plots:
+   - Temporal distribution (when decisions occur)
+   - District frequency (where decisions cluster)
+   - Spatial map (geographic patterns)
+
+**Key Findings from Demo:**
+- OParl API provides structured, machine-readable council data
+- Development plan references can be automatically detected using text patterns
+- Spatial analysis is feasible with district-level geocoding
+- The methodology is reproducible and transferable to other cities
+
+**Modular Architecture:** The demo leverages 39 reusable functions organized in `/R/` directory, making the workflow adaptable to Augsburg (primary study city) and other municipalities implementing OParl.
+
+**Demo outputs:** All visualizations are saved with `demo_bonn_*` prefix to distinguish them from production analysis results.
+
+---
+
+## 6. Timeline
 
 #### Step 1: Data Collection & Preprocessing (Weeks 1-2)
 
@@ -88,7 +110,7 @@ This descriptive-exploratory question investigates:
 #### Step 5: Visualization & Reporting (Weeks 5-6)
 
 
-## 6. Risks and Contingency
+## 7. Risks and Contingency
 
 ### Risk 1: Georeferencing Fails
 
@@ -142,7 +164,6 @@ This descriptive-exploratory question investigates:
 2. **Buffer time:** Build 1-week buffer before final deadline
 
 ---
-
 
 
 *Bibliography will be completed during literature review phase (Weeks 1-2).*

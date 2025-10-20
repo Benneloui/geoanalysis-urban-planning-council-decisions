@@ -12,50 +12,58 @@ This project investigates the spatial and temporal patterns of municipal council
 ## Project Structure
 
 ```
-├── README.md                      <- This file: project overview and instructions
-├── PROPOSAL.md                    <- Detailed project proposal
 │
-├── council_decisions_analysis.Rproj  <- R project file
-│
-├── .gitignore                     <- Files to exclude from version control
-├── renv.lock                      <- Package dependency lock file
-│
-├── data-raw/                      <- Raw data from external sources (NOT in git)
-│   ├── README.md                  <- Data collection protocol
-│   ├── council_meetings/          <- Downloaded council information
-│   └── geodata/                   <- Shapefiles, GeoJSON files
-│
-├── data/                          <- Processed, analysis-ready data (IN git)
-│   ├── README.md                  <- Data dictionary
-│   ├── council_bplan_decisions.csv       <- Main analysis dataset
-│   ├── council_bplan_decisions.geojson   <- Georeferenced decisions
-│   └── districts.geojson                 <- District boundaries
-│
-├── R/                             <- Custom R functions
-│   ├── load_data.R                <- Data loading utilities
-│   ├── geocoding.R                <- Geocoding functions
-│   ├── spatial_analysis.R         <- Moran's I, clustering functions
-│   └── visualization.R            <- Custom plotting functions
-│
-├── analysis/                      <- Analysis scripts (numbered workflow)
-│   ├── 01_data_processing.R
-│   └── 02
-│
-├── vignettes/                     <- R Markdown reports
-│   ├── analysis.Rmd               <- Main report (full workflow)
-│   ├── references.bib             <- Bibliography
-│   └── apa-7th-edition.csl        <- Citation style
-│
-├── outputs/                       <- Generated outputs (NOT in git)
-│   ├── figures/                   <- All plots and maps
-│   └── tables/                    <- Results tables
-│
-└── figures/                       <- Publication-ready figures (IN git)
-    ├── fig1_overview_map.png
-    ├── fig2_temporal_trend.png
-    ├── fig3_spatial_clusters.png
-    ├── fig4_thematic_distribution.png
-    └── fig5_renewal_comparison.png
+  ├── 📄 README.md                       ← Project overview
+  ├── 📄 Proposal.md                     ← Research proposal
+  ├── 📄 LICENSE
+  ├── 📄 geomodelierung.Rproj            ← RStudio project file
+  ├── 📄 .gitignore                      ← Git ignore rules
+  │
+  ├── 📂 R/                              ← **REUSABLE FUNCTION LIBRARY**
+  │   ├── README.md                      ← Documentation
+  │   ├── utils.R                        ← General helpers
+  │   ├── oparl_api.R                    ← OParl API integration
+  │   ├── text_analysis.R                ← Text mining for B-Plans
+  │   ├── geocoding.R                    ← Spatial processing
+  │   └── visualization.R                ← Publication plots
+  │
+  ├── 📂 analysis/                       ← **PRODUCTION WORKFLOWS**
+  │   ├── README.md                      ← Workflow documentation
+  │   └── 01_download_data.R             ← Data collection script
+  │
+  ├── 📂 test_demo/                      ← **DEMO & UTILITIES**
+  │   ├── demo_oparl_bonn.R              ← Proof-of-concept demo
+  │   └── utils/
+  │       └── synthetic_data.R           ← Test data generator
+  │
+  ├── 📂 data-raw/                       ← **RAW DATA** (gitignored)
+  │   ├── README.md                      ← Data collection protocol
+  │   └── council_meetings/              ← Downloaded OParl data (.rds files)
+  │       └──
+  │
+  ├── 📂 data/                           ← **PROCESSED DATA** (git-tracked)
+  │   ├── README.md                      ← Data dictionary
+  │   └──
+  │
+  ├── 📂 vignettes/                      ← **R MARKDOWN REPORTS**
+  │   ├── README.md                      ← Vignette documentation
+  │   └── placeholder.Rmd
+  │
+  ├── 📂 figures/                        ← **PUBLICATION FIGURES** (git-tracked)
+  │   └── (empty - ready for final figures)
+  │
+  ├── 📂 outputs/                        ← **WORKING OUTPUTS** (gitignored, not shown)
+  │   └── figures/                       ← Generated plots during analysis
+  │
+  ├── 📂 docs/                           ← **DOCUMENTATION**
+  │   └── (empty - ready for additional docs)
+  │
+  ├── 📂 presentations/                  ← **PRESENTATIONS**
+  │   └── (empty - ready for slides)
+  │
+  └── 📂 .vscode/                        ← VSCode configuration
+      └── launch.json                    ← Debug configuration
+
 ```
 
 

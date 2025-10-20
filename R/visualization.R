@@ -81,9 +81,17 @@ plot_temporal_trend <- function(df,
     ) +
     theme_minimal() +
     theme(
-      plot.title = element_text(face = "bold", size = 14),
-      plot.subtitle = element_text(size = 11),
-      legend.position = "bottom"
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13),
+      axis.text = element_text(size = 11),
+      legend.position = "bottom",
+      legend.text = element_text(size = 11),
+      legend.title = element_text(size = 12, face = "bold"),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      panel.grid.major = element_line(color = "gray85"),
+      panel.grid.minor = element_line(color = "gray92")
     )
 
   p
@@ -148,9 +156,18 @@ plot_district_frequency <- function(df,
     ) +
     theme_minimal() +
     theme(
-      plot.title = element_text(face = "bold", size = 14),
-      plot.subtitle = element_text(size = 11),
-      legend.position = "bottom"
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
+      axis.title = element_text(size = 13),
+      axis.text.y = element_text(size = 12),  # Larger for district names (more readable)
+      axis.text.x = element_text(size = 11),
+      legend.position = "bottom",
+      legend.text = element_text(size = 11),
+      legend.title = element_text(size = 12, face = "bold"),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
+      panel.grid.major = element_line(color = "gray85"),
+      panel.grid.minor = element_line(color = "gray92")
     )
 
   p
@@ -204,11 +221,15 @@ plot_spatial_map <- function(sf_obj,
     ) +
     theme_minimal() +
     theme(
-      plot.title = element_text(face = "bold", size = 14),
-      plot.subtitle = element_text(size = 11),
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
       legend.position = "bottom",
+      legend.text = element_text(size = 11),
+      legend.title = element_text(size = 12, face = "bold"),
       axis.text = element_blank(),
       axis.title = element_blank(),
+      plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "white", color = NA),
       panel.grid = element_line(color = "gray90")
     ) +
     guides(size = "none")
