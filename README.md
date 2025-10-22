@@ -12,7 +12,7 @@ This project investigates the spatial and temporal patterns of municipal council
 ## Project Structure
 
 ```
-│
+  │
   ├── 📄 README.md                       ← Project overview
   ├── 📄 Proposal.md                     ← Research proposal
   ├── 📄 LICENSE
