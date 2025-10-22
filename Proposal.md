@@ -56,12 +56,73 @@ This descriptive-exploratory question investigates:
 
 #### Data Sources - Dataset 1: Council Meeting Information
 
-**Primary Option - OParl API:**
+**Primary Option - [OPARL](https://github.com/OParl) API:**
 - **Description:** Standardized API for accessing German municipal council information
 - **Format:** JSON (structured data)
 - **Access:** Public APIs from municipalities implementing OParl standard
 - **Variables:** Meeting date, agenda items, titles, full text, decision outcomes, attachments
 - **License:** Typically Open Data (varies by municipality)
+
+
+┌─────────────────────────────────────────────────────────┐
+│               Municipal Council System                  │
+│  (What the municipality uses internally)                │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌──────────────────────────────────────────┐          │
+│  │  Ratsinformationssystem (RIS)            │          │
+│  │  ──────────────────────────              │          │
+│  │  Commercial products like:                │          │
+│  │  - SessionNet (Somacos)                   │          │
+│  │  - Allris (cc|gis)                        │          │
+│  │  - eSitzung (STERNBERG)                   │          │
+│  │  - Vois (Webforum)                        │          │
+│  └──────────────────┬───────────────────────┘          │
+│                     │                                    │
+│         stores data in ↓                                 │
+│                                                          │
+│  ┌──────────────────────────────────────────┐          │
+│  │         Database (Backend)                │          │
+│  │  ────────────────────────                 │          │
+│  │  Usually:                                 │          │
+│  │  • SQL Server (Microsoft)                 │          │
+│  │  • Oracle Database                        │          │
+│  │  • PostgreSQL                             │          │
+│  │  • MySQL/MariaDB                          │          │
+│  │                                            │          │
+│  │  Tables for:                               │          │
+│  │  - Meetings (Sitzungen)                   │          │
+│  │  - Agenda items (Tagesordnungspunkte)     │          │
+│  │  - Papers (Drucksachen)                   │          │
+│  │  - Persons (Personen)                     │          │
+│  │  - Organizations (Gremien)                │          │
+│  │  - Files (Dokumente)                      │          │
+│  └──────────────────┬───────────────────────┘          │
+│                     │                                    │
+│         provides    ↓                                    │
+│                                                          │
+│  ┌──────────────────────────────────────────┐          │
+│  │      OParl API Server                     │          │
+│  │  ────────────────────────                 │          │
+│  │  REST API that:                           │          │
+│  │  1. Queries the database                  │          │
+│  │  2. Formats results as JSON               │          │
+│  │  3. Handles pagination                    │          │
+│  │  4. Manages authentication (if needed)    │          │
+│  └──────────────────┬───────────────────────┘          │
+│                     │                                    │
+└─────────────────────┼────────────────────────────────────┘
+                      │
+                      │ HTTP/HTTPS
+                      │ (Public Internet)
+                      ↓
+          ┌─────────────────────────┐
+          │    Your R Code          │
+          │  ──────────────          │
+          │  library(httr)          │
+          │  GET("/oparl/meeting")  │
+          └─────────────────────────┘
+
 
 **Fallback Option - Manual Collection:**
 - **Description:** Direct download from municipal council information portals
