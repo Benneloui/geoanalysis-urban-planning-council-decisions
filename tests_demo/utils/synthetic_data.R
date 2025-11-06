@@ -100,6 +100,7 @@ generate_demo_bplan_data <- function() {
     name = c(
       "Bebauungsplan Innenstadt-West Nr. 1234",
       "B-Plan Wohnsiedlung Altstadt-Nord",
+      "Bebauungsplan Altstadt-Süd Wohnen",
       "Bebauungsplan Gewerbegebiet Deutz",
       "B-Plan Kalk-Ost Wohngebiet",
       "Bebauungsplan Mülheim Zentrum",
@@ -111,13 +112,12 @@ generate_demo_bplan_data <- function() {
       "Bebauungsplan Porz Verdichtung",
       "B-Plan Chorweiler Wohnpark",
       "Bebauungsplan Poll Einzelhandel",
-      "B-Plan Bayenthal Naturschutz",
-      "Bebauungsplan Altstadt-Süd Wohnen"
+      "B-Plan Bayenthal Naturschutz"
     ),
     district = c(
-      "Innenstadt", "Altstadt-Nord", "Deutz", "Kalk", "Mülheim",
-      "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen", "Sülz",
-      "Porz", "Chorweiler", "Poll", "Bayenthal", "Altstadt-Süd"
+      "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
+      "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
+      "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
     ),
     date = seq(as.Date("2023-01-15"), by = "month", length.out = 15),
     decision_type = sample(
