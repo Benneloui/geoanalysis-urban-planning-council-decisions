@@ -15,9 +15,9 @@ suppressPackageStartupMessages({
   library(sf)
 })
 
-#' Get Bonn District Coordinates
+#' Get Cologne District Coordinates
 #'
-#' Returns approximate center coordinates for Bonn districts.
+#' Returns approximate center coordinates for Cologne districts.
 #' Used for demonstration/fallback when precise geocoding is not available.
 #'
 #' @return Tibble with columns: district, lon, lat
@@ -30,21 +30,21 @@ suppressPackageStartupMessages({
 get_district_coordinates <- function() {
   tribble(
     ~district,       ~lon,     ~lat,
-    "Innenstadt",    7.0982,   50.7374,
-    "Nordstadt",     7.0982,   50.7474,
-    "Südstadt",      7.0982,   50.7274,
-    "Beuel",         7.1282,   50.7374,
-    "Bad Godesberg", 7.1582,   50.6874,
-    "Dottendorf",    7.1082,   50.7174,
-    "Poppelsdorf",   7.0782,   50.7224,
-    "Endenich",      7.0582,   50.7324,
-    "Duisdorf",      7.0482,   50.7524,
-    "Hardtberg",     7.0282,   50.7674,
-    "Kessenich",     7.0882,   50.7074,
-    "Vilich",        7.1382,   50.7274,
-    "Lengsdorf",     7.0382,   50.7424,
-    "Röttgen",       7.0182,   50.6874,
-    "Ückesdorf",     7.1482,   50.6974
+    "Innenstadt",    6.9603,   50.9375,
+    "Altstadt-Nord", 6.9580,   50.9420,
+    "Altstadt-Süd",  6.9620,   50.9330,
+    "Deutz",         6.9850,   50.9380,
+    "Kalk",          7.0050,   50.9350,
+    "Mülheim",       7.0200,   50.9600,
+    "Ehrenfeld",     6.9200,   50.9500,
+    "Nippes",        6.9500,   50.9700,
+    "Lindenthal",    6.9150,   50.9280,
+    "Rodenkirchen",  6.9800,   50.8950,
+    "Sülz",          6.9280,   50.9180,
+    "Porz",          7.0650,   50.8850,
+    "Chorweiler",    6.8800,   51.0200,
+    "Poll",          7.0100,   50.9150,
+    "Bayenthal",     6.9700,   50.9100
   )
 }
 
@@ -84,7 +84,7 @@ geocode_by_district <- function(df, district_coords = NULL) {
 #' @return sf object
 #'
 #' @examples
-#' df <- tibble(lon = 7.0982, lat = 50.7374, name = "Bonn")
+#' df <- tibble(lon = 6.9603, lat = 50.9375, name = "Cologne")
 #' sf_obj <- df_to_sf(df)
 #'
 #' @export
@@ -118,7 +118,7 @@ df_to_sf <- function(df,
 #' NOTE: Requires internet connection and respects usage limits.
 #'
 #' @param address Character string of address to geocode
-#' @param city Optional city name to append to query (default: "Bonn, Germany")
+#' @param city Optional city name to append to query (default: "Cologne, Germany")
 #' @param timeout_sec HTTP timeout in seconds (default: 10)
 #'
 #' @return Named vector with lon, lat, display_name or NA if failed
@@ -130,7 +130,7 @@ df_to_sf <- function(df,
 #'
 #' @export
 geocode_nominatim <- function(address,
-                              city = "Bonn, Germany",
+                              city = "Cologne, Germany",
                               timeout_sec = 10) {
 
   # Construct query
@@ -182,7 +182,7 @@ geocode_nominatim <- function(address,
 #' Geocodes multiple addresses with automatic rate limiting to respect API limits.
 #'
 #' @param addresses Character vector of addresses
-#' @param city City name (default: "Bonn, Germany")
+#' @param city City name (default: "Cologne, Germany")
 #' @param delay_sec Delay between requests in seconds (default: 1, Nominatim policy)
 #' @param show_progress Show progress bar (default: TRUE)
 #'
@@ -196,7 +196,7 @@ geocode_nominatim <- function(address,
 #'
 #' @export
 geocode_batch <- function(addresses,
-                          city = "Bonn, Germany",
+                          city = "Cologne, Germany",
                           delay_sec = 1,
                           show_progress = TRUE) {
 

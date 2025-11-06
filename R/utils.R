@@ -25,21 +25,21 @@
 
 #' Extract District Name from Text
 #'
-#' Searches text for known Bonn district names and returns the first match.
+#' Searches text for known Cologne district names and returns the first match.
 #'
 #' @param text Character vector to search
 #' @param known_districts Character vector of district names to search for
 #' @return First matched district name or NA if no match
 #'
 #' @examples
-#' extract_district("Bebauungsplan in Poppelsdorf")  # Returns "Poppelsdorf"
+#' extract_district("Bebauungsplan in Ehrenfeld")  # Returns "Ehrenfeld"
 extract_district <- function(text, known_districts = NULL) {
   if (is.null(known_districts)) {
-    # Default Bonn districts
+    # Default Cologne districts
     known_districts <- c(
-      "Innenstadt", "Nordstadt", "Südstadt", "Beuel", "Bad Godesberg",
-      "Dottendorf", "Poppelsdorf", "Endenich", "Duisdorf", "Hardtberg",
-      "Kessenich", "Vilich", "Lengsdorf", "Röttgen", "Ückesdorf"
+      "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
+      "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
+      "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
     )
   }
 

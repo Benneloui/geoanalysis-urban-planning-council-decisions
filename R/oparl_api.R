@@ -41,15 +41,15 @@ OPARL_PAUSE_SEC <- 1
 #' @return List of OParl objects
 #'
 #' @examples
-#' # Fetch all meetings from Bonn
+#' # Fetch all meetings from Cologne
 #' meetings <- oparl_fetch_all(
-#'   "https://www.bonn.sitzung-online.de/public/oparl/body/1/meeting",
+#'   "https://ratsinformation.stadt-koeln.de/oparl/body/1/meeting",
 #'   max_pages = 10
 #' )
 #'
 #' # Fetch with time filter
 #' recent_meetings <- oparl_fetch_all(
-#'   "https://www.bonn.sitzung-online.de/public/oparl/body/1/meeting",
+#'   "https://ratsinformation.stadt-koeln.de/oparl/body/1/meeting",
 #'   query = list(modified_since = "2023-01-01T00:00:00Z"),
 #'   max_items = 50
 #' )
@@ -127,8 +127,8 @@ oparl_fetch_all <- function(url,
 #' @return List containing parsed OParl system object
 #'
 #' @examples
-#' # Connect to Bonn OParl API
-#' system <- oparl_connect("https://www.bonn.sitzung-online.de/public/oparl/system")
+#' # Connect to Cologne OParl API
+#' system <- oparl_connect("https://ratsinformation.stadt-koeln.de/oparl/system")
 #' print(system$name)
 #'
 #' @export

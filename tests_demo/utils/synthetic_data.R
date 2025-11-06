@@ -16,7 +16,7 @@ suppressPackageStartupMessages({
 
 #' Generate Synthetic Bebauungsplan Data
 #'
-#' Creates synthetic development plan (Bebauungsplan) data for Bonn districts.
+#' Creates synthetic development plan (Bebauungsplan) data for Cologne districts.
 #' Useful for testing and demonstration when real OParl data is not available.
 #'
 #' @param n_items Number of synthetic items to generate (default: 15)
@@ -36,11 +36,11 @@ generate_synthetic_bplan_data <- function(n_items = 15,
                                           freq = "month",
                                           decision_probs = c(0.7, 0.1, 0.2)) {
 
-  # Bonn districts
+  # Cologne districts
   districts <- c(
-    "Innenstadt", "Nordstadt", "Südstadt", "Beuel", "Bad Godesberg",
-    "Dottendorf", "Poppelsdorf", "Endenich", "Duisdorf", "Hardtberg",
-    "Kessenich", "Vilich", "Lengsdorf", "Röttgen", "Ückesdorf"
+    "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
+    "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
+    "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
   )
 
   # Plan types
@@ -99,25 +99,25 @@ generate_demo_bplan_data <- function() {
     id = paste0("synthetic_", 1:15),
     name = c(
       "Bebauungsplan Innenstadt-West Nr. 1234",
-      "B-Plan Wohnsiedlung Nordstadt",
-      "Bebauungsplan Gewerbegebiet Süd",
-      "B-Plan Beuel-Ost Wohngebiet",
-      "Bebauungsplan Bad Godesberg Zentrum",
-      "B-Plan Dottendorf Quartiersplatz",
-      "Bebauungsplan Poppelsdorf Wohnbebauung",
-      "B-Plan Endenich Mischgebiet",
-      "Bebauungsplan Duisdorf Gewerbefläche",
-      "B-Plan Hardtberg Neubaugebiet",
-      "Bebauungsplan Kessenich Verdichtung",
-      "B-Plan Vilich Wohnpark",
-      "Bebauungsplan Lengsdorf Einzelhandel",
-      "B-Plan Röttgen Naturschutz",
-      "Bebauungsplan Ückesdorf Wohnen"
+      "B-Plan Wohnsiedlung Altstadt-Nord",
+      "Bebauungsplan Gewerbegebiet Deutz",
+      "B-Plan Kalk-Ost Wohngebiet",
+      "Bebauungsplan Mülheim Zentrum",
+      "B-Plan Ehrenfeld Quartiersplatz",
+      "Bebauungsplan Nippes Wohnbebauung",
+      "B-Plan Lindenthal Mischgebiet",
+      "Bebauungsplan Rodenkirchen Gewerbefläche",
+      "B-Plan Sülz Neubaugebiet",
+      "Bebauungsplan Porz Verdichtung",
+      "B-Plan Chorweiler Wohnpark",
+      "Bebauungsplan Poll Einzelhandel",
+      "B-Plan Bayenthal Naturschutz",
+      "Bebauungsplan Altstadt-Süd Wohnen"
     ),
     district = c(
-      "Innenstadt", "Nordstadt", "Südstadt", "Beuel", "Bad Godesberg",
-      "Dottendorf", "Poppelsdorf", "Endenich", "Duisdorf", "Hardtberg",
-      "Kessenich", "Vilich", "Lengsdorf", "Röttgen", "Ückesdorf"
+      "Innenstadt", "Altstadt-Nord", "Deutz", "Kalk", "Mülheim",
+      "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen", "Sülz",
+      "Porz", "Chorweiler", "Poll", "Bayenthal", "Altstadt-Süd"
     ),
     date = seq(as.Date("2023-01-15"), by = "month", length.out = 15),
     decision_type = sample(
