@@ -25,21 +25,21 @@
 
 #' Extract District Name from Text
 #'
-#' Searches text for known Cologne district names and returns the first match.
+#' Searches text for known Augsburg district names and returns the first match.
 #'
 #' @param text Character vector to search
 #' @param known_districts Character vector of district names to search for
 #' @return First matched district name or NA if no match
 #'
 #' @examples
-#' extract_district("Bebauungsplan in Ehrenfeld")  # Returns "Ehrenfeld"
+#' extract_district("Bebauungsplan in Göggingen")  # Returns "Göggingen"
 extract_district <- function(text, known_districts = NULL) {
   if (is.null(known_districts)) {
-    # Default Cologne districts
+    # Default Augsburg districts
     known_districts <- c(
-      "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
-      "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
-      "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
+      "Innenstadt", "Antonsviertel", "Bärenkeller", "Göggingen", "Haunstetten",
+      "Hochfeld", "Kriegshaber", "Lechhausen", "Oberhausen", "Pfersee",
+      "Spickel", "Stadtbergen", "Univiertel", "Hammerschmiede", "Bergheim"
     )
   }
 

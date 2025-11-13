@@ -32,7 +32,7 @@ This project investigates the spatial and temporal patterns of municipal council
   │   └── 01_download_data.R             ← Data collection script
   │
   ├── 📂 test_demo/                      ← **DEMO & UTILITIES**
-  │   ├── demo_oparl_cologne.R              ← Proof-of-concept demo
+  │   ├── demo_oparl_augsburg.R              ← Proof-of-concept demo
   │   └── utils/
   │       └── synthetic_data.R           ← Test data generator
   │

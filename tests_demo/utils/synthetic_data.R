@@ -16,7 +16,7 @@ suppressPackageStartupMessages({
 
 #' Generate Synthetic Bebauungsplan Data
 #'
-#' Creates synthetic development plan (Bebauungsplan) data for Cologne districts.
+#' Creates synthetic development plan (Bebauungsplan) data for Augsburg districts.
 #' Useful for testing and demonstration when real OParl data is not available.
 #'
 #' @param n_items Number of synthetic items to generate (default: 15)
@@ -36,11 +36,11 @@ generate_synthetic_bplan_data <- function(n_items = 15,
                                           freq = "month",
                                           decision_probs = c(0.7, 0.1, 0.2)) {
 
-  # Cologne districts
+  # Augsburg districts
   districts <- c(
-    "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
-    "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
-    "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
+    "Innenstadt", "Antonsviertel", "Bärenkeller", "Göggingen", "Haunstetten",
+    "Hochfeld", "Kriegshaber", "Lechhausen", "Oberhausen", "Pfersee",
+    "Spickel", "Stadtbergen", "Univiertel", "Hammerschmiede", "Bergheim"
   )
 
   # Plan types
@@ -99,25 +99,25 @@ generate_demo_bplan_data <- function() {
     id = paste0("synthetic_", 1:15),
     name = c(
       "Bebauungsplan Innenstadt-West Nr. 1234",
-      "B-Plan Wohnsiedlung Altstadt-Nord",
-      "Bebauungsplan Altstadt-Süd Wohnen",
-      "Bebauungsplan Gewerbegebiet Deutz",
-      "B-Plan Kalk-Ost Wohngebiet",
-      "Bebauungsplan Mülheim Zentrum",
-      "B-Plan Ehrenfeld Quartiersplatz",
-      "Bebauungsplan Nippes Wohnbebauung",
-      "B-Plan Lindenthal Mischgebiet",
-      "Bebauungsplan Rodenkirchen Gewerbefläche",
-      "B-Plan Sülz Neubaugebiet",
-      "Bebauungsplan Porz Verdichtung",
-      "B-Plan Chorweiler Wohnpark",
-      "Bebauungsplan Poll Einzelhandel",
-      "B-Plan Bayenthal Naturschutz"
+      "B-Plan Wohnsiedlung Antonsviertel",
+      "Bebauungsplan Bärenkeller Wohnen",
+      "Bebauungsplan Gewerbegebiet Göggingen",
+      "B-Plan Haunstetten-Ost Wohngebiet",
+      "Bebauungsplan Hochfeld Zentrum",
+      "B-Plan Kriegshaber Quartiersplatz",
+      "Bebauungsplan Lechhausen Wohnbebauung",
+      "B-Plan Oberhausen Mischgebiet",
+      "Bebauungsplan Pfersee Gewerbefläche",
+      "B-Plan Spickel Neubaugebiet",
+      "Bebauungsplan Stadtbergen Verdichtung",
+      "B-Plan Univiertel Wohnpark",
+      "Bebauungsplan Hammerschmiede Einzelhandel",
+      "B-Plan Bergheim Naturschutz"
     ),
     district = c(
-      "Innenstadt", "Altstadt-Nord", "Altstadt-Süd", "Deutz", "Kalk",
-      "Mülheim", "Ehrenfeld", "Nippes", "Lindenthal", "Rodenkirchen",
-      "Sülz", "Porz", "Chorweiler", "Poll", "Bayenthal"
+      "Innenstadt", "Antonsviertel", "Bärenkeller", "Göggingen", "Haunstetten",
+      "Hochfeld", "Kriegshaber", "Lechhausen", "Oberhausen", "Pfersee",
+      "Spickel", "Stadtbergen", "Univiertel", "Hammerschmiede", "Bergheim"
     ),
     date = seq(as.Date("2023-01-15"), by = "month", length.out = 15),
     decision_type = sample(

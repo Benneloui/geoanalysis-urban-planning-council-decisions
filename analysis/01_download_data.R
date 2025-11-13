@@ -2,7 +2,7 @@
 # Analysis Workflow Step 1: Download Council Data
 # ============================================================================
 # Downloads council meeting and agenda data from OParl API endpoints.
-# Supports multiple cities (Cologne, Augsburg, etc.) via configuration.
+# Supports multiple cities (Augsburg, Cologne, etc.) via configuration.
 #
 # Outputs:
 #   - data-raw/council_meetings/{city}_meetings.rds
@@ -29,13 +29,13 @@ source("R/text_analysis.R")
 # --------------------------------------------------------------------------
 
 # City to analyze (can be changed or made into command-line argument)
-CITY <- "cologne"  # Options: "cologne", "augsburg", etc.
+CITY <- "augsburg"  # Options: "augsburg", "cologne", etc.
 
 # OParl endpoints for different cities
 OPARL_ENDPOINTS <- list(
-  cologne = "https://ratsinformation.stadt-koeln.de/oparl/system",
-  # Add other cities as they become available:
-  # augsburg = "https://example.com/oparl/system"
+  augsburg = "https://augsburg.sitzung-online.de/public/oparl/system",
+  cologne = "https://ratsinformation.stadt-koeln.de/oparl/system"
+  # Add other cities as they become available
 )
 
 # Data collection parameters
