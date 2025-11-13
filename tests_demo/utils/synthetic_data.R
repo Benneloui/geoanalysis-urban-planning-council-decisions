@@ -16,7 +16,7 @@ suppressPackageStartupMessages({
 
 #' Generate Synthetic Bebauungsplan Data
 #'
-#' Creates synthetic development plan (Bebauungsplan) data for Bonn districts.
+#' Creates synthetic development plan (Bebauungsplan) data for Augsburg districts.
 #' Useful for testing and demonstration when real OParl data is not available.
 #'
 #' @param n_items Number of synthetic items to generate (default: 15)
@@ -36,11 +36,11 @@ generate_synthetic_bplan_data <- function(n_items = 15,
                                           freq = "month",
                                           decision_probs = c(0.7, 0.1, 0.2)) {
 
-  # Bonn districts
+  # Augsburg districts
   districts <- c(
-    "Innenstadt", "Nordstadt", "Südstadt", "Beuel", "Bad Godesberg",
-    "Dottendorf", "Poppelsdorf", "Endenich", "Duisdorf", "Hardtberg",
-    "Kessenich", "Vilich", "Lengsdorf", "Röttgen", "Ückesdorf"
+    "Innenstadt", "Antonsviertel", "Bärenkeller", "Göggingen", "Haunstetten",
+    "Hochfeld", "Kriegshaber", "Lechhausen", "Oberhausen", "Pfersee",
+    "Spickel", "Stadtbergen", "Univiertel", "Hammerschmiede", "Bergheim"
   )
 
   # Plan types
@@ -99,25 +99,25 @@ generate_demo_bplan_data <- function() {
     id = paste0("synthetic_", 1:15),
     name = c(
       "Bebauungsplan Innenstadt-West Nr. 1234",
-      "B-Plan Wohnsiedlung Nordstadt",
-      "Bebauungsplan Gewerbegebiet Süd",
-      "B-Plan Beuel-Ost Wohngebiet",
-      "Bebauungsplan Bad Godesberg Zentrum",
-      "B-Plan Dottendorf Quartiersplatz",
-      "Bebauungsplan Poppelsdorf Wohnbebauung",
-      "B-Plan Endenich Mischgebiet",
-      "Bebauungsplan Duisdorf Gewerbefläche",
-      "B-Plan Hardtberg Neubaugebiet",
-      "Bebauungsplan Kessenich Verdichtung",
-      "B-Plan Vilich Wohnpark",
-      "Bebauungsplan Lengsdorf Einzelhandel",
-      "B-Plan Röttgen Naturschutz",
-      "Bebauungsplan Ückesdorf Wohnen"
+      "B-Plan Wohnsiedlung Antonsviertel",
+      "Bebauungsplan Bärenkeller Wohnen",
+      "Bebauungsplan Gewerbegebiet Göggingen",
+      "B-Plan Haunstetten-Ost Wohngebiet",
+      "Bebauungsplan Hochfeld Zentrum",
+      "B-Plan Kriegshaber Quartiersplatz",
+      "Bebauungsplan Lechhausen Wohnbebauung",
+      "B-Plan Oberhausen Mischgebiet",
+      "Bebauungsplan Pfersee Gewerbefläche",
+      "B-Plan Spickel Neubaugebiet",
+      "Bebauungsplan Stadtbergen Verdichtung",
+      "B-Plan Univiertel Wohnpark",
+      "Bebauungsplan Hammerschmiede Einzelhandel",
+      "B-Plan Bergheim Naturschutz"
     ),
     district = c(
-      "Innenstadt", "Nordstadt", "Südstadt", "Beuel", "Bad Godesberg",
-      "Dottendorf", "Poppelsdorf", "Endenich", "Duisdorf", "Hardtberg",
-      "Kessenich", "Vilich", "Lengsdorf", "Röttgen", "Ückesdorf"
+      "Innenstadt", "Antonsviertel", "Bärenkeller", "Göggingen", "Haunstetten",
+      "Hochfeld", "Kriegshaber", "Lechhausen", "Oberhausen", "Pfersee",
+      "Spickel", "Stadtbergen", "Univiertel", "Hammerschmiede", "Bergheim"
     ),
     date = seq(as.Date("2023-01-15"), by = "month", length.out = 15),
     decision_type = sample(

@@ -15,9 +15,9 @@ suppressPackageStartupMessages({
   library(sf)
 })
 
-#' Get Bonn District Coordinates
+#' Get Augsburg District Coordinates
 #'
-#' Returns approximate center coordinates for Bonn districts.
+#' Returns approximate center coordinates for Augsburg districts.
 #' Used for demonstration/fallback when precise geocoding is not available.
 #'
 #' @return Tibble with columns: district, lon, lat
@@ -29,22 +29,22 @@ suppressPackageStartupMessages({
 #' @export
 get_district_coordinates <- function() {
   tribble(
-    ~district,       ~lon,     ~lat,
-    "Innenstadt",    7.0982,   50.7374,
-    "Nordstadt",     7.0982,   50.7474,
-    "Südstadt",      7.0982,   50.7274,
-    "Beuel",         7.1282,   50.7374,
-    "Bad Godesberg", 7.1582,   50.6874,
-    "Dottendorf",    7.1082,   50.7174,
-    "Poppelsdorf",   7.0782,   50.7224,
-    "Endenich",      7.0582,   50.7324,
-    "Duisdorf",      7.0482,   50.7524,
-    "Hardtberg",     7.0282,   50.7674,
-    "Kessenich",     7.0882,   50.7074,
-    "Vilich",        7.1382,   50.7274,
-    "Lengsdorf",     7.0382,   50.7424,
-    "Röttgen",       7.0182,   50.6874,
-    "Ückesdorf",     7.1482,   50.6974
+    ~district,         ~lon,     ~lat,
+    "Innenstadt",      10.8978,  48.3668,
+    "Antonsviertel",   10.9050,  48.3700,
+    "Bärenkeller",     10.8800,  48.3550,
+    "Göggingen",       10.8650,  48.3400,
+    "Haunstetten",     10.9200,  48.3300,
+    "Hochfeld",        10.9100,  48.3800,
+    "Kriegshaber",     10.8600,  48.3750,
+    "Lechhausen",      10.9350,  48.3720,
+    "Oberhausen",      10.8850,  48.3900,
+    "Pfersee",         10.8700,  48.3650,
+    "Spickel",         10.9000,  48.3450,
+    "Stadtbergen",     10.8500,  48.3850,
+    "Univiertel",      10.8900,  48.3600,
+    "Hammerschmiede",  10.9150,  48.3500,
+    "Bergheim",        10.8750,  48.3780
   )
 }
 
@@ -84,7 +84,7 @@ geocode_by_district <- function(df, district_coords = NULL) {
 #' @return sf object
 #'
 #' @examples
-#' df <- tibble(lon = 7.0982, lat = 50.7374, name = "Bonn")
+#' df <- tibble(lon = 10.8978, lat = 48.3668, name = "Augsburg")
 #' sf_obj <- df_to_sf(df)
 #'
 #' @export
@@ -118,7 +118,7 @@ df_to_sf <- function(df,
 #' NOTE: Requires internet connection and respects usage limits.
 #'
 #' @param address Character string of address to geocode
-#' @param city Optional city name to append to query (default: "Bonn, Germany")
+#' @param city Optional city name to append to query (default: "Augsburg, Germany")
 #' @param timeout_sec HTTP timeout in seconds (default: 10)
 #'
 #' @return Named vector with lon, lat, display_name or NA if failed
@@ -130,7 +130,7 @@ df_to_sf <- function(df,
 #'
 #' @export
 geocode_nominatim <- function(address,
-                              city = "Bonn, Germany",
+                              city = "Augsburg, Germany",
                               timeout_sec = 10) {
 
   # Construct query
@@ -182,7 +182,7 @@ geocode_nominatim <- function(address,
 #' Geocodes multiple addresses with automatic rate limiting to respect API limits.
 #'
 #' @param addresses Character vector of addresses
-#' @param city City name (default: "Bonn, Germany")
+#' @param city City name (default: "Augsburg, Germany")
 #' @param delay_sec Delay between requests in seconds (default: 1, Nominatim policy)
 #' @param show_progress Show progress bar (default: TRUE)
 #'
@@ -196,7 +196,7 @@ geocode_nominatim <- function(address,
 #'
 #' @export
 geocode_batch <- function(addresses,
-                          city = "Bonn, Germany",
+                          city = "Augsburg, Germany",
                           delay_sec = 1,
                           show_progress = TRUE) {
 

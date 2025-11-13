@@ -139,9 +139,9 @@ This descriptive-exploratory question investigates:
 
 ## 5. Proof-of-Concept Demo
 
-**Demo Implementation:** A working proof-of-concept demonstration has been created using the city of Bonn as a test case. The demo (`tests_demo/demo_oparl_bonn.R`) validates the technical feasibility of the project by:
+**Demo Implementation:** A working proof-of-concept demonstration has been created using the city of Augsburg as a test case. The demo (`tests_demo/demo_oparl_augsburg.R`) validates the technical feasibility of the project by:
 
-1. **Connecting to OParl API:** Successfully retrieves council meeting data from Bonn's public OParl endpoint
+1. **Connecting to OParl API:** Successfully retrieves council meeting data from Augsburg's public OParl endpoint
 2. **Extracting Bebauungsplan references:** Uses text mining to identify development plan discussions in agenda items
 3. **Geocoding locations:** Converts district names to coordinates for spatial analysis
 4. **Creating visualizations:** Generates three types of plots:
@@ -157,7 +157,7 @@ This descriptive-exploratory question investigates:
 
 **Modular Architecture:** The demo leverages 39 reusable functions organized in `/R/` directory, making the workflow adaptable to Augsburg (primary study city) and other municipalities implementing OParl.
 
-**Demo outputs:** All visualizations are saved with `demo_bonn_*` prefix to distinguish them from production analysis results.
+**Demo outputs:** All visualizations are saved with `demo_augsburg_*` prefix to distinguish them from production analysis results.
 
 ---
 

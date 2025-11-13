@@ -42,8 +42,8 @@ Functions for interacting with OParl-compliant municipal council APIs.
 ```r
 source("R/oparl_api.R")
 
-# Connect to Bonn
-system <- oparl_connect("https://www.bonn.sitzung-online.de/public/oparl/system")
+# Connect to Augsburg
+system <- oparl_connect("https://augsburg.sitzung-online.de/public/oparl/system")
 bodies <- fetch_bodies(system)
 body <- bodies[[1]]
 
@@ -93,7 +93,7 @@ df <- df %>%
 Functions for geocoding addresses and spatial data processing.
 
 **Functions:**
-- `get_district_coordinates()` - Get Bonn district center coordinates
+- `get_district_coordinates()` - Get Augsburg district center coordinates
 - `geocode_by_district()` - Join data with district coordinates
 - `df_to_sf()` - Convert data frame to sf spatial object
 - `geocode_nominatim()` - Geocode single address via Nominatim API
@@ -216,7 +216,7 @@ stopifnot(str_detect("Bebauungsplan", pattern))
 
 # Test geocoding
 coords <- get_district_coordinates()
-stopifnot(nrow(coords) == 15)  # 15 Bonn districts
+stopifnot(nrow(coords) == 15)  # 15 Augsburg districts
 ```
 
 ---

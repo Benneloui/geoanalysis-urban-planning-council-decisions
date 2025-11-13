@@ -1,5 +1,5 @@
 # ============================================================================
-# DEMONSTRATION: OParl Data from Bonn - Feasibility Proof
+# DEMONSTRATION: OParl Data from Augsburg - Feasibility Proof
 # ============================================================================
 # This script demonstrates that council data is:
 # 1. Machine-readable (JSON via OParl API)
@@ -40,18 +40,18 @@ USE_SYNTHETIC_FALLBACK <- TRUE  # Set to FALSE to run demo strictly without synt
 MIN_POINTS_FOR_VIS <- 5         # Minimum geocoded points for visualization
 
 # ============================================================================
-# STEP 1: Connect to Bonn OParl API
+# STEP 1: Connect to Augsburg OParl API
 # ============================================================================
 
-print_section("Step 1: Connecting to Bonn OParl API...", "📡")
+print_section("Step 1: Connecting to Augsburg OParl API...", "📡")
 
-# Bonn OParl endpoint
-bonn_oparl_url <- "https://www.bonn.sitzung-online.de/public/oparl/system"
+# Augsburg OParl endpoint
+augsburg_oparl_url <- "https://augsburg.sitzung-online.de/public/oparl/system"
 
 # Connect to system
-system_info <- oparl_connect(bonn_oparl_url, timeout_sec = HTTP_TIMEOUT)
+system_info <- oparl_connect(augsburg_oparl_url, timeout_sec = HTTP_TIMEOUT)
 
-cat("✅ Successfully connected to Bonn OParl API\n")
+cat("✅ Successfully connected to Augsburg OParl API\n")
 cat("   System Name:", system_info$name, "\n")
 cat("   OParl Version:", system_info$oparlVersion, "\n")
 cat("   Website:", system_info$website, "\n\n")
@@ -258,7 +258,7 @@ cat("   Creating temporal trend plot...\n")
 temporal_plot <- plot_temporal_trend(
   bplan_spatial,
   bins = 12,
-  title = "Temporal Distribution of B-Plan Decisions in Bonn",
+  title = "Temporal Distribution of B-Plan Decisions in Augsburg",
   subtitle = "Sample data from 2023-2024"
 )
 
@@ -266,7 +266,7 @@ temporal_plot <- plot_temporal_trend(
 cat("   Creating district frequency plot...\n")
 district_plot <- plot_district_frequency(
   bplan_spatial,
-  title = "B-Plan Activity by District in Bonn",
+  title = "B-Plan Activity by District in Augsburg",
   subtitle = "Where are development plans being negotiated?"
 )
 
@@ -274,15 +274,15 @@ district_plot <- plot_district_frequency(
 cat("   Creating spatial distribution map...\n")
 map_plot <- plot_spatial_map(
   bplan_sf,
-  title = "Spatial Distribution of B-Plan Decisions in Bonn",
+  title = "Spatial Distribution of B-Plan Decisions in Augsburg",
   subtitle = "Each point represents a council decision on a development plan"
 )
 
 # Save plots with demo and city prefix
 PNG_DPI <- if (DEMO_MODE) 120 else 300
-save_plot(temporal_plot, "demo_bonn_temporal_trend.png", dpi = PNG_DPI)
-save_plot(district_plot, "demo_bonn_district_frequency.png", width = 10, height = 8, dpi = PNG_DPI)
-save_plot(map_plot, "demo_bonn_spatial_map.png", width = 10, height = 8, dpi = PNG_DPI)
+save_plot(temporal_plot, "demo_augsburg_temporal_trend.png", dpi = PNG_DPI)
+save_plot(district_plot, "demo_augsburg_district_frequency.png", width = 10, height = 8, dpi = PNG_DPI)
+save_plot(map_plot, "demo_augsburg_spatial_map.png", width = 10, height = 8, dpi = PNG_DPI)
 
 cat("\n✅ Visualizations saved!\n\n")
 
@@ -345,7 +345,7 @@ cat("   6. Create interactive visualizations (leaflet maps)\n\n")
 
 print_separator()
 cat("📁 Files created:\n")
-cat("   - outputs/figures/demo_bonn_temporal_trend.png\n")
-cat("   - outputs/figures/demo_bonn_district_frequency.png\n")
-cat("   - outputs/figures/demo_bonn_spatial_map.png\n")
+cat("   - outputs/figures/demo_augsburg_temporal_trend.png\n")
+cat("   - outputs/figures/demo_augsburg_district_frequency.png\n")
+cat("   - outputs/figures/demo_augsburg_spatial_map.png\n")
 print_separator()
