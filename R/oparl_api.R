@@ -66,31 +66,88 @@ oparl_fetch_all <- function(url,
   all_items <- list()
   page_count <- 0
   next_url <- if (length(query)) httr::modify_url(url, query = query) else url
+  show_progress <- TRUE  # Only show detailed progress for main endpoints
 
   repeat {
     page_count <- page_count + 1
     if (page_count > max_pages || is.null(next_url)) break
 
-    # Fetch page with retry logic
-    resp <- httr::RETRY(
-      "GET", next_url,
-      httr::timeout(timeout_sec),
-      times = retries,
-      pause_min = pause_sec,
-      terminate_on = c(400, 401, 403, 404)  # Don't retry client errors
-    )
+    # Simple retry logic with while loop
+    resp <- NULL
+    attempt_num <- 1
+    first_attempt <- TRUE
+
+    while (attempt_num <= retries) {
+      resp <- tryCatch({
+        httr::GET(
+          next_url,
+          httr::timeout(timeout_sec),
+          httr::user_agent("R OParl Client (httr)")
+        )
+      }, error = function(e) {
+        # Only show error on first attempt to reduce spam
+        if (first_attempt) {
+          cat("   ⚠️  Page", page_count, "failed (attempt", attempt_num, "/", retries, ")\n")
+          first_attempt <<- FALSE
+        }
+        if (attempt_num < retries) {
+          Sys.sleep(pause_sec)
+        }
+        NULL  # Return NULL on error
+      })
+
+      # If successful, break out of retry loop
+      if (!is.null(resp)) {
+        if (!first_attempt) {
+          cat("   ✅ Page", page_count, "succeeded after", attempt_num, "attempts\n")
+        }
+        break
+      }
+
+      # Increment attempt counter
+      attempt_num <- attempt_num + 1
+    }
+
+    # If all retries failed, stop
+    if (is.null(resp)) {
+      warning("Failed to fetch ", next_url, " after ", retries, " attempts")
+      break
+    }
 
     # Check response status
-    if (httr::status_code(resp) != 200) {
+    if (is.null(resp) || httr::status_code(resp) != 200) {
       warning(
         "Failed to fetch ", next_url,
-        "; status: ", httr::status_code(resp)
+        "; status: ", if (!is.null(resp)) httr::status_code(resp) else "NULL"
       )
       break
     }
 
+    # Check if response is actually JSON (not HTML error page)
+    content_type <- httr::headers(resp)$`content-type` %||% ""
+    if (!grepl("application/json", content_type, ignore.case = TRUE)) {
+      warning("Server returned non-JSON response (", content_type, "). Skipping this page.")
+      break
+    }
+
     # Parse JSON response
-    parsed <- httr::content(resp, as = "parsed", type = "application/json")
+    parsed <- tryCatch({
+      httr::content(resp, as = "parsed", type = "application/json")
+    }, error = function(e) {
+      warning("JSON parse error: ", e$message, ". Response might be HTML.")
+      # Try to get raw text to see what we got
+      raw_text <- httr::content(resp, as = "text", encoding = "UTF-8")
+      if (nchar(raw_text) < 500) {
+        warning("Response preview: ", substr(raw_text, 1, 200))
+      }
+      NULL
+    })
+
+    # If parsing failed, stop
+    if (is.null(parsed)) {
+      warning("Failed to parse response as JSON")
+      break
+    }
 
     # Extract items from OParl list structure: list(data = [...], links = list(next = ...))
     items <- parsed$data %||% list()
@@ -186,13 +243,32 @@ parse_meetings <- function(meetings_list) {
 #' @export
 parse_agenda_items <- function(agenda_list) {
   purrr::map_dfr(agenda_list, function(item) {
+    # Handle consultation - may be NULL, empty list, or list of URLs
+    consultation_url <- if (!is.null(item$consultation) && length(item$consultation) > 0) {
+      as.character(item$consultation[[1]])
+    } else {
+      NA_character_
+    }
+
+    # Handle meeting reference - may be character URL or list
+    meeting_id <- if (!is.null(item$meeting)) {
+      if (is.list(item$meeting) && length(item$meeting) > 0) {
+        as.character(item$meeting[[1]])
+      } else {
+        as.character(item$meeting)
+      }
+    } else {
+      NA_character_
+    }
+
     tibble(
       id = item$id %||% NA_character_,
       name = item$name %||% NA_character_,
       number = item$number %||% NA_character_,
       public = as.logical(item$public %||% NA),
       result = item$result %||% NA_character_,
-      consultation_url = as.character((item$consultation %||% list())[[1]] %||% NA_character_)
+      consultation_url = consultation_url,
+      meeting_id = meeting_id
     )
   })
 }

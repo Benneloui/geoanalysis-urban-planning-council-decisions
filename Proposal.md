@@ -1,4 +1,4 @@
-# Project Proposal: Spatial-Temporal Analysis of Council Decisions on Development Plans
+# Project Proposal: Spatial-Temporal Analysis of Municipa Councilmeeting documents
 
 Proseminar - Applied Geodata Science
 
@@ -8,51 +8,33 @@ University of Bern
 
 **Supervisor:** Prof. Benjamin Stocker
 
-## 1. Summary
+## Summary
 
-This project investigates the spatial and temporal patterns of municipal council decisions related to development plans (Bebauungspläne) in a selected German or Swiss city. Using council meeting information from either OParl APIs or manual collection, combined with development plan geodata, I analyze where and when planning decisions occur over a time period. The reproducible R-based workflow can be transferred to other municipalities, contributing methodologically to the intersection of e-government data and spatial planning research.
+This project investigates the spatial and temporal patterns of municipal council decisions in a selected German city X. Using council meeting information from OParl APIs, combined with geodata, it analyze where and when decisions occur over a time period. The reproducible R-based workflow can be transferred to other municipalities, contributing methodologically to the intersection of e-government data and spatial planning research.
 
-## 2. Background and Motivation
+## Background and Motivation
 
-Urban development planning is a core function of local government, directly affecting citizens' built environment, housing availability, and neighborhood development. Municipal councils (Gemeinderat, Stadtrat) play a critical decision-making role in adopting, modifying, or rejecting development plans (Bebauungspläne). However, the spatial and temporal patterns of these political decisions remain largely intrasperent, despite their importance for understanding:
-
-- **Planning priorities:** Which districts receive political attention and resources?
-- **Urban renewal effectiveness:** Do designated renewal areas receive proportionally more planning activity?
-- **Democratic representation:** Are all neighborhoods equally represented in planning decisions?
-- **Policy implementation:** How do political timelines align with planning goals?
-
-
-Existing research has established that:
+Urban planning is a core function of local government, directly affecting citizens' built environment and housing availability. Municipal councils (Gemeinderat, Stadtrat) play a critical decision-making role in adopting, modifying, or rejecting plans. However, the spatial and temporal patterns of these political decisions remain largely intrasperent. But efforts to change this have been made to some extent.
 
 - Municipal council decisions are increasingly digitized and accessible through standards like OParl (Germany) or similar e-government initiatives
-- Development plans are well-documented in municipal geoportals
-- Urban planning processes involve spatial inequalities
+- Development plans become more documented with new standards in municipal geoportals
 
-
-Despite this foundation, critical gaps remain:
+But critical gaps remain:
 
 - **No comprehensive spatial analysis** of where council planning decisions concentrate within cities
 - **Limited understanding** of temporal dynamics in planning activity (trends, acceleration, seasonal patterns)
 - **Unclear relationship** between designated urban renewal areas and actual political prioritization
 - **Absence of reproducible methods** for analyzing council information spatially
 
-
 Germany's recent "Bauturbo" policies aim to accelerate development approvals, but their effectiveness may depend on underlying patterns of political attention and administrative capacity. Understanding where and when councils already focus planning efforts provides baseline evidence for evaluating policy impacts. Additionally, the methodology addresses the growing availability of structured municipal data (e-government platforms), demonstrating how open data can inform urban research.
 
-## 3. Objective
-
+## Objective
 
 **Research Quesiton:**
-> "Where and when is geographically relevant information, such as development plans in City X, negotiated politically? What anomalies does a spatial-temporal analysis of City Council information in period Y reveal? How does the ratio of decisions in planned and unplanned areas vary?"
+> "Where and when is geographically relevant information, in City "Augsburg", negotiated politically? What anomalies does a spatial-temporal analysis of City Council information reveal?"
 
 
-This descriptive-exploratory question investigates:
-1. **Spatial concentration:** In which districts do development plan decisions cluster?
-2. **Temporal patterns:** Has planning activity increased, decreased, or remained stable? Are there seasonal variations?
-3. **Thematic focus:** What types of plans dominate (residential, commercial, green space)?
-4. **Process characteristics:** How long do planning processes take from initial discussion to final decision?
-
-## 4. Implementation
+## Implementation
 
 #### Data Sources - Dataset 1: Council Meeting Information
 
@@ -117,7 +99,7 @@ This descriptive-exploratory question investigates:
                       │ (Public Internet)
                       ↓
           ┌─────────────────────────┐
-          │    Your R Code          │
+          │     R Code              │
           │  ──────────────         │
           │  library(httr)          │
           │  GET("/oparl/meeting")  │
@@ -125,77 +107,38 @@ This descriptive-exploratory question investigates:
 ```
 
 
-**Fallback Option - Manual Collection:**
-- **Description:** Direct download from municipal council information portals
-- **Format:** PDF/HTML documents
-- **Access:** Municipal websites (e.g., Ratsinformationssystem)
-- **Process:** Search for "Bebauungsplan", download relevant documents
-- **Documentation:** Collection protocol will be documented
-
-
 **Socioeconomic indicators (optional):**
 - Source: Census data, statistical yearbooks
 - Variables: Population density, income, demographics
 
-## 5. Proof-of-Concept Demo
-
-**Demo Implementation:** A working proof-of-concept demonstration has been created using the city of Augsburg as a test case. The demo (`tests_demo/demo_oparl_augsburg.R`) validates the technical feasibility of the project by:
 
 1. **Connecting to OParl API:** Successfully retrieves council meeting data from Augsburg's public OParl endpoint
-2. **Extracting Bebauungsplan references:** Uses text mining to identify development plan discussions in agenda items
-3. **Geocoding locations:** Converts district names to coordinates for spatial analysis
-4. **Creating visualizations:** Generates three types of plots:
-   - Temporal distribution (when decisions occur)
-   - District frequency (where decisions cluster)
-   - Spatial map (geographic patterns)
-
-**Key Findings from Demo:**
-- OParl API provides structured, machine-readable council data
-- Development plan references can be automatically detected using text patterns
-- Spatial analysis is feasible with district-level geocoding
-- The methodology is reproducible and transferable to other cities
-
-**Modular Architecture:** The demo leverages 39 reusable functions organized in `/R/` directory, making the workflow adaptable to Augsburg (primary study city) and other municipalities implementing OParl.
-
-**Demo outputs:** All visualizations are saved with `demo_augsburg_*` prefix to distinguish them from production analysis results.
+2. **Geocoding locations:** Converts district names etc. to coordinates for spatial analysis
+3. **Creating visualizations:**
 
 ---
 
-## 6. Timeline
 
-#### Step 1: Data Collection & Preprocessing (Weeks 1-2)
-
-#### Step 2: Georeferencing (Weeks 2-3)
-
-#### Step 3: Analysis (Weeks 3-5)
-
-#### Step 5: Visualization & Reporting (Weeks 5-6)
-
-
-## 7. Risks and Contingency
+## Risks and Contingency in this Project
 
 ### Risk 1: Georeferencing Fails
 
 **Risk Description:**
 - Cannot reliably extract location information from text
 - Geocoding accuracy too low
-- Spatial join with development plans unsuccessful
+- Spatial join unsuccessful
 
 **Probability:** Medium
 **Impact:** High
 
 **Mitigation Strategies:**
-1. **Early testing:** Test georeferencing on 20-document sample (Week 3)
+1. **Early testing:** Test georeferencing on sample
 2. **Multiple methods:**
    - Direct address extraction + geocoding
    - Plan name matching with B-Plan registry
    - District name extraction (coarser but more reliable)
 3. **Manual validation:** Hand-check ambiguous cases
 4. **Accept partial success:** 70-80% georeferenced may be sufficient
-
-**Adaptive Strategy:**
-- Week 4 checkpoint: Assess georeferencing success rate
-
 
 ### Risk 2: No Significant Spatial Patterns
 
@@ -221,16 +164,9 @@ This descriptive-exploratory question investigates:
 **Probability:** High (common in research)
 **Impact:** Medium
 
-**Mitigation Strategies:**
-1. **Start immediately:** Begin data collection in Week 1, parallel with proposal
-2. **Buffer time:** Build 1-week buffer before final deadline
-
 ---
 
-
 *Bibliography will be completed during literature review phase (Weeks 1-2).*
-
-
 
 ## Contact Information
 

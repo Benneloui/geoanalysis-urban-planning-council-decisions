@@ -1,0 +1,24 @@
+# Web Scraper Dependencies
+# =========================
+
+# Core Scraping
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Progress & CLI
+tqdm==4.66.1
+
+# Configuration
+pyyaml==6.0.1
+
+# Optional: Advanced Scraping
+# selenium==4.15.2  # Für JavaScript-heavy Sites
+# playwright==1.40.0  # Alternative zu Selenium
+
+# Utilities
+python-dateutil==2.8.2
+
+# Optional: Rate Limiting & Caching
+# ratelimit==2.2.1
+# requests-cache==1.1.1
