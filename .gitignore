@@ -49,6 +49,8 @@ data-raw/
 *.prj
 *.shx
 *.cpg
+*.sql
+*.png
 
 # OS-specific
 .DS_Store
