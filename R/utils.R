@@ -7,6 +7,11 @@
 # Date: October 2025
 # ============================================================================
 
+# Load required libraries
+suppressPackageStartupMessages({
+  library(logger)
+})
+
 #' NULL-Coalescing Operator
 #'
 #' Returns the left-hand side if not NULL, otherwise returns the right-hand side.
@@ -72,25 +77,68 @@ safe_parse_date <- function(date_string, fallback_date = Sys.Date()) {
 
 #' Print Section Header
 #'
-#' Prints a formatted section header for console output.
+#' Prints a formatted section header using the logger.
 #'
 #' @param text Header text
 #' @param emoji Optional emoji prefix (default: "")
-#' @param width Total width of separator line (default: 70)
-print_section <- function(text, emoji = "", width = 70) {
-  if (nchar(emoji) > 0) {
-    cat(emoji, " ", text, "\n", sep = "")
-  } else {
-    cat(text, "\n")
-  }
+print_section <- function(text, emoji = "") {
+  log_info(paste(emoji, text))
 }
 
 #' Print Separator Line
 #'
-#' Prints a separator line for console output.
+#' Prints a separator line using the logger.
 #'
 #' @param char Character to repeat (default: "=")
 #' @param width Width of line (default: 70)
 print_separator <- function(char = "=", width = 70) {
-  cat(strrep(char, width), "\n")
+  log_info(strrep(char, width))
+}
+
+#' Safely Read PDF Text from a URL with OCR fallback
+#'
+#' Downloads a PDF from a URL to a temporary file, extracts the text using
+#' pdftools (with a tesseract OCR fallback), and cleans up the temporary file.
+#'
+#' @param url The URL of the PDF file.
+#' @return A single character string containing the collapsed text of the PDF,
+#'   or NA_character_ if the URL is invalid or the PDF cannot be read.
+#' @export
+read_pdf_from_url <- function(url) {
+  if (is.na(url) || !str_starts(url, "http")) {
+    return(NA_character_)
+  }
+  temp_pdf_path <- tempfile(fileext = ".pdf")
+  on.exit(unlink(temp_pdf_path), add = TRUE)
+  
+  download_success <- tryCatch({
+    # Add a timeout to the download
+    download.file(url, temp_pdf_path, mode = "wb", quiet = TRUE, timeout = 60)
+    TRUE
+  }, error = function(e) {
+    log_warn("Failed to download URL: {url} - {e$message}")
+    FALSE
+  })
+  
+  if (!download_success) {
+    return(NA_character_)
+  }
+  
+  # Try pdftools first
+  pdf_text <- tryCatch({
+    pdftools::pdf_text(temp_pdf_path)
+  }, error = function(e) NULL)
+  
+  # OCR fallback if no text layer is found
+  if (is.null(pdf_text) || all(nchar(trimws(pdf_text)) == 0)) {
+    pdf_text <- tryCatch({
+      tesseract::ocr(temp_pdf_path)
+    }, error = function(e) {
+      log_warn("OCR failed for URL: {url} - {e$message}")
+      NA_character_
+    })
+    return(paste(pdf_text, collapse = " \n "))
+  }
+  
+  return(paste(pdf_text, collapse = " \n "))
 }

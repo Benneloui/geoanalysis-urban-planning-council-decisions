@@ -1,0 +1,95 @@
+INFO [2025-11-17 15:40:58] ======================================================================
+INFO [2025-11-17 15:40:58] DATA DOWNLOAD: AUGSBURG
+INFO [2025-11-17 15:40:58] ======================================================================
+INFO [2025-11-17 15:40:58] 🔌 Connecting to OParl API...
+INFO [2025-11-17 15:40:59] Connected to: ALLRIS OParl der Stadt Augsburg
+INFO [2025-11-17 15:40:59] OParl Version: https://schema.oparl.org/1.1/
+INFO [2025-11-17 15:40:59] Endpoint: https://www.augsburg.sitzung-online.de/public/oparl/system
+INFO [2025-11-17 15:40:59] 🏛️ Fetching political bodies...
+INFO [2025-11-17 15:40:59] Found body: Stadt Augsburg
+INFO [2025-11-17 15:40:59] ID: https://www.augsburg.sitzung-online.de/public/oparl/bodies?id=1
+INFO [2025-11-17 15:40:59] 📅 Downloading council meetings...
+INFO [2025-11-17 15:40:59] Time filter: Since 2020-01-01T00:00:00Z
+INFO [2025-11-17 15:40:59] Max pages: 50
+INFO [2025-11-17 15:50:29] Downloaded 219 meetings
+INFO [2025-11-17 15:50:29] Date range: 2023-10-18 to 2027-12-01
+INFO [2025-11-17 15:50:29] Saved to: data-raw/council_meetings/augsburg_meetings.rds
+INFO [2025-11-17 15:50:29] Saved raw data to: data-raw/council_meetings/augsburg_meetings_raw.rds
+INFO [2025-11-17 15:50:29] 📋 Downloading agenda items...
+INFO [2025-11-17 15:50:29] Processing meetings for agenda items...
+INFO [2025-11-17 15:50:29] Progress: 21/219 (10%)
+INFO [2025-11-17 15:50:29] Progress: 42/219 (19%)
+INFO [2025-11-17 15:50:29] Progress: 63/219 (29%)
+INFO [2025-11-17 15:50:29] Progress: 84/219 (38%)
+INFO [2025-11-17 15:50:29] Progress: 105/219 (48%)
+INFO [2025-11-17 15:50:29] Progress: 126/219 (58%)
+INFO [2025-11-17 15:50:29] Progress: 147/219 (67%)
+INFO [2025-11-17 15:50:29] Progress: 168/219 (77%)
+INFO [2025-11-17 15:50:29] Progress: 189/219 (86%)
+INFO [2025-11-17 15:50:29] Progress: 210/219 (96%)
+INFO [2025-11-17 15:50:29] Found agenda items from 87 meetings
+INFO [2025-11-17 15:50:29] Total agenda items: 1109
+INFO [2025-11-17 15:50:29] Saved to: data-raw/council_meetings/augsburg_agenda.rds
+INFO [2025-11-17 15:50:29] 📄 Downloading papers/documents (full details)...
+INFO [2025-11-17 15:50:29] Fetching summary list of all papers...
+INFO [2025-11-17 15:56:47] Found 675 papers in the summary list.
+INFO [2025-11-17 15:56:47] Processing 675 unique paper URLs.
+INFO [2025-11-17 15:56:47] Fetching full details for each paper in parallel... (this may take a while)
+INFO [2025-11-17 15:56:48] --- Processing Batch 1/7 (100 papers) ---
+INFO [2025-11-17 15:57:27] Batch 1 complete. Saved 79 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:57:27] --- Processing Batch 2/7 (100 papers) ---
+INFO [2025-11-17 15:57:56] Batch 2 complete. Saved 98 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:57:56] --- Processing Batch 3/7 (100 papers) ---
+INFO [2025-11-17 15:58:33] Batch 3 complete. Saved 100 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:58:33] --- Processing Batch 4/7 (100 papers) ---
+INFO [2025-11-17 15:58:57] Batch 4 complete. Saved 100 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:58:57] --- Processing Batch 5/7 (100 papers) ---
+INFO [2025-11-17 15:59:20] Batch 5 complete. Saved 100 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:59:20] --- Processing Batch 6/7 (100 papers) ---
+INFO [2025-11-17 15:59:45] Batch 6 complete. Saved 100 papers (with PDFs) to temporary file.
+INFO [2025-11-17 15:59:45] --- Processing Batch 7/7 (75 papers) ---
+INFO [2025-11-17 16:00:02] Batch 7 complete. Saved 74 papers (with PDFs) to temporary file.
+INFO [2025-11-17 16:00:02] --- Combining all batches ---
+INFO [2025-11-17 16:00:03] Combined 651 papers from 7 batch files. Temporary files removed.
+INFO [2025-11-17 16:00:03] Total papers with PDFs to be saved: 651
+INFO [2025-11-17 16:00:03] 🔍 Filtering for Bebauungsplan references...
+INFO [2025-11-17 16:00:03] Agenda items: 14 B-Plan references
+INFO [2025-11-17 16:00:03] Papers: 9 B-Plan references
+INFO [2025-11-17 16:00:03] Total B-Plan references found: 23
+INFO [2025-11-17 16:00:03] Saved to: data-raw/council_meetings/augsburg_bplan_raw.rds
+INFO [2025-11-17 16:00:03] Sample B-Plan items:
+INFO [2025-11-17 16:00:03] # A tibble: 10 × 2
+   name                                                                   source
+   <chr>                                                                  <chr> 
+ 1 "Bebauungsplan Nr. 634 E\n„Nördlich der Straße ‚Beim Grenzgraben‘ (Ab… agenda
+ 2 "Aufhebung der Vergaberichtlinie für das Baugebiet „Westlich der Wern… agenda
+ 3 "Aufhebung der Vergaberichtlinie für das Baugebiet „Westlich der Wern… agenda
+ 4 "Bebauungsplan (BP) Nr. 482 „Zwischen Holzbachstraße und Stadtjägerst… agenda
+ 5 "Bebauungsplan (BP) Nr. 301 „Westlich der Straße ‚Am Wachtelschlag‘“\… agenda
+ 6 "Bebauungsplan (BP) Nr. 482 „Zwischen Holzbachstraße und Stadtjägerst… agenda
+ 7 "Bebauungsplan (BP) Nr. 301 „Westlich der Straße ‚Am Wachtelschlag‘“\… agenda
+ 8 "Temporäre Aussetzung des Veräußerungsmodells und Anpassung der Quote… agenda
+ 9 "Beschlussvorlage BSV/25/61069 - Temporäre Aussetzung des Veräußerung… agenda
+10 "Bebauungsplan (BP) Nr. 486 „Östlich der Berliner Allee, ehemaliges ‚… agenda
+INFO [2025-11-17 16:00:03] ======================================================================
+INFO [2025-11-17 16:00:03] DATA DOWNLOAD COMPLETE
+INFO [2025-11-17 16:00:03] ======================================================================
+INFO [2025-11-17 16:00:03] Summary:
+INFO [2025-11-17 16:00:03] - Meetings: 219
+INFO [2025-11-17 16:00:03] - Agenda items: 1109
+INFO [2025-11-17 16:00:03] - Papers: 651
+INFO [2025-11-17 16:00:03] - B-Plan references: 23
+INFO [2025-11-17 16:00:03] Files saved to: data-raw/council_meetings
+INFO [2025-11-17 16:00:03] - augsburg_meetings.rds
+INFO [2025-11-17 16:00:03] - augsburg_agenda.rds
+INFO [2025-11-17 16:00:03] - augsburg_papers.rds
+INFO [2025-11-17 16:00:03] - augsburg_bplan_raw.rds
+INFO [2025-11-17 16:00:03] ======================================================================
+INFO [2025-11-17 16:00:03] Next step: Run 02_extract_pdf_text.R
+INFO [2025-11-17 16:00:03] --- Interpretation ---
+INFO [2025-11-17 16:00:03] - Meetings: 219 total sessions, date range: 2023-10-18 to 2027-12-01
+INFO [2025-11-17 16:00:03] - Agenda Items: 1109 (from 12 meetings)
+INFO [2025-11-17 16:00:03] - Papers: 651 documents (OParl 'paper')
+INFO [2025-11-17 16:00:03] - B-Plan references: 23 = 14 (Agenda) + 9 (Papers)
+INFO [2025-11-17 16:00:03] - API request time filter: modified_since = 2020-01-01T00:00:00Z (filters by modification date, not necessarily meeting date)
+INFO [2025-11-17 16:00:03] Summary JSON file saved: data-raw/council_meetings/augsburg_summary.json

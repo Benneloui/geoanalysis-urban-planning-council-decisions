@@ -84,7 +84,7 @@ filter_bplan_items <- function(df,
 #' @export
 extract_plan_number <- function(text) {
   # Pattern: "Nr." or "No." followed by optional space and alphanumeric characters
-  pattern <- "(?:Nr\.?|No\.?)\s*([A-Za-z0-9-]+)"
+  pattern <- "(?:Nr\\.?|No\\.?)\\s*([A-Za-z0-9-]+)"
   stringr::str_extract(text, stringr::regex(pattern, ignore_case = TRUE))
 }
 
@@ -170,7 +170,7 @@ classify_decision_type <- function(text) {
 #' @export
 extract_location <- function(text) {
   # Pattern: Common German street suffixes
-  street_pattern <- "([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.|weg|platz|allee|ring|damm|ufer))"
+  street_pattern <- "([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\\.|weg|platz|allee|ring|damm|ufer))"
   stringr::str_extract(text, stringr::regex(street_pattern, ignore_case = TRUE))
 }
 
@@ -187,13 +187,13 @@ extract_location <- function(text) {
 get_location_patterns <- function() {
   list(
     # Street address pattern (e.g., "Hauptstraße 5", "Am Markt 12a")
-    address = "(?:\\b(?:in der |an der |auf der )?[A-ZÄÖÜ][a-zäöüß]+(?:straße|str\\.|weg|platz|allee|gasse|ring)\\s+\\d+[a-z]?\\b)",
+    address = "([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\\.|weg|platz|allee|gasse|ring)\\s+\\d+[a-z]?)",
 
     # Parcel number pattern (e.g., "Fl.Nr. 123", "Flurnummer 456/7")
-    parcel = "(?:Fl(?:urnummer|\\.\\s?Nr\\.?)\\s*\\d+(?:/\\d+)?)",
+    parcel = "(Fl(?:urnummer|\\.\\s?Nr\\.?)\\s*\\d+(?:/\\d+)?)",
 
-    # Building plan pattern (e.g., "B-Plan Nr. 123", "Bebauungsplan 456")
-    bplan = "(?:B(?:ebauungs)?-?Plan(?:\\s+Nr\\.?)?\\s*\\d+[A-Z]?)"
+    # Building plan pattern - use the string pattern, not the regex object
+    bplan = "(bebauungsplan|bebauungspl[aä]n[e]?|b-?plan|bpl[aä]n[e]?)"
   )
 }
 

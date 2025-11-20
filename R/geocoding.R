@@ -13,6 +13,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(tibble)
   library(sf)
+  library(logger)
 })
 
 #' Get Augsburg District Coordinates
@@ -155,7 +156,7 @@ geocode_nominatim <- function(address,
       httr::user_agent("R geomodelierung research project")  # Nominatim requires user agent
     )
   }, error = function(e) {
-    warning("Geocoding request failed: ", e$message)
+    log_warn("Geocoding request failed: {e$message}")
     return(NULL)
   })
 
@@ -204,12 +205,12 @@ geocode_batch <- function(addresses,
   results <- vector("list", n)
 
   if (show_progress) {
-    cat("Geocoding", n, "addresses...\n")
+    log_info("Geocoding {n} addresses...")
   }
 
   for (i in seq_along(addresses)) {
     if (show_progress && i %% 10 == 0) {
-      cat("  Progress:", i, "/", n, "\n")
+      log_info("Progress: {i}/{n}")
     }
 
     coords <- geocode_nominatim(addresses[i], city = city)

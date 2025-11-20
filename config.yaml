@@ -1,0 +1,59 @@
+# ============================================================================
+# Global Configuration for Council Data Analysis Pipeline
+# ============================================================================
+
+# --------------------------------------------------------------------------
+# General Settings
+# --------------------------------------------------------------------------
+# City to analyze. This should match a key in the 'oparl_endpoints' list.
+city: "augsburg"
+
+# --------------------------------------------------------------------------
+# Directory Paths
+# --------------------------------------------------------------------------
+# Base directory for raw data downloaded from APIs
+dir_raw: "data-raw/council_meetings"
+
+# Directory for processed data ready for analysis or geocoding
+dir_processed: "data"
+
+# Directory for log files
+dir_logs: "logs"
+
+# --------------------------------------------------------------------------
+# OParl API Settings
+# --------------------------------------------------------------------------
+oparl:
+  # List of available OParl system endpoints
+  endpoints:
+    augsburg: "https://www.augsburg.sitzung-online.de/public/oparl/system"
+    cologne: "https://ratsinformation.stadt-koeln.de/oparl/system"
+
+  # Filter for fetching data modified after this date (ISO 8601 format)
+  start_date: "2020-01-01T00:00:00Z"
+
+  # Pagination limits (increase for full dataset)
+  max_pages_meetings: 50
+  max_pages_agenda: 20
+
+  # Network settings for API requests
+  http_timeout_sec: 40
+  retry_attempts: 5
+  retry_pause_sec: 2
+
+# --------------------------------------------------------------------------
+# Processing Settings
+# --------------------------------------------------------------------------
+processing:
+  # Batch size for downloading full paper details in 01_download_data.R
+  paper_download_batch_size: 100
+
+  # Batch size for extracting PDF text in 02_extract_pdf_text.R
+  pdf_extraction_batch_size: 100
+
+# --------------------------------------------------------------------------
+# Test Script Settings
+# --------------------------------------------------------------------------
+testing:
+  # Number of papers to process in 02_local_test_prepare_data.R
+  sample_size: 20

@@ -15,6 +15,7 @@ suppressPackageStartupMessages({
   library(purrr)
   library(dplyr)
   library(tibble)
+  library(logger)
 })
 
 # Source utilities
@@ -87,7 +88,7 @@ oparl_fetch_all <- function(url,
       }, error = function(e) {
         # Only show error on first attempt to reduce spam
         if (first_attempt) {
-          cat("   ⚠️  Page", page_count, "failed (attempt", attempt_num, "/", retries, ")\n")
+          log_warn("Page {page_count} failed (attempt {attempt_num}/{retries})")
           first_attempt <<- FALSE
         }
         if (attempt_num < retries) {
@@ -99,7 +100,7 @@ oparl_fetch_all <- function(url,
       # If successful, break out of retry loop
       if (!is.null(resp)) {
         if (!first_attempt) {
-          cat("   ✅ Page", page_count, "succeeded after", attempt_num, "attempts\n")
+          log_info("Page {page_count} succeeded after {attempt_num} attempts")
         }
         break
       }
@@ -110,23 +111,20 @@ oparl_fetch_all <- function(url,
 
     # If all retries failed, stop
     if (is.null(resp)) {
-      warning("Failed to fetch ", next_url, " after ", retries, " attempts")
+      log_warn("Failed to fetch {next_url} after {retries} attempts")
       break
     }
 
     # Check response status
     if (is.null(resp) || httr::status_code(resp) != 200) {
-      warning(
-        "Failed to fetch ", next_url,
-        "; status: ", if (!is.null(resp)) httr::status_code(resp) else "NULL"
-      )
+      log_warn("Failed to fetch {next_url}; status: {if (!is.null(resp)) httr::status_code(resp) else 'NULL'}")
       break
     }
 
     # Check if response is actually JSON (not HTML error page)
     content_type <- httr::headers(resp)$`content-type` %||% ""
     if (!grepl("application/json", content_type, ignore.case = TRUE)) {
-      warning("Server returned non-JSON response (", content_type, "). Skipping this page.")
+      log_warn("Server returned non-JSON response ({content_type}). Skipping this page.")
       break
     }
 
@@ -134,18 +132,18 @@ oparl_fetch_all <- function(url,
     parsed <- tryCatch({
       httr::content(resp, as = "parsed", type = "application/json")
     }, error = function(e) {
-      warning("JSON parse error: ", e$message, ". Response might be HTML.")
+      log_warn("JSON parse error: {e$message}. Response might be HTML.")
       # Try to get raw text to see what we got
       raw_text <- httr::content(resp, as = "text", encoding = "UTF-8")
       if (nchar(raw_text) < 500) {
-        warning("Response preview: ", substr(raw_text, 1, 200))
+        log_warn("Response preview: {substr(raw_text, 1, 200)}")
       }
       NULL
     })
 
     # If parsing failed, stop
     if (is.null(parsed)) {
-      warning("Failed to parse response as JSON")
+      log_warn("Failed to parse response as JSON")
       break
     }
 
@@ -275,19 +273,21 @@ parse_agenda_items <- function(agenda_list) {
 
 #' Parse OParl Papers to Data Frame
 #'
-#' Converts a list of OParl paper/document objects to a tidy data frame.
+#' Converts a list of full OParl paper/document objects to a tidy data frame,
+#' including the URL to the main PDF document.
 #'
-#' @param papers_list List of OParl paper objects
+#' @param papers_list List of full OParl paper objects.
 #'
-#' @return Tibble with paper information
+#' @return Tibble with paper information including id, name, and pdf_url.
 #'
 #' @export
 parse_papers <- function(papers_list) {
-  purrr::map_dfr(papers_list, function(p) {
-    tibble(
-      id = p$id %||% NA_character_,
-      name = p$name %||% p$title %||% NA_character_,
-      published = p$publishedDate %||% p$created %||% NA_character_
+  purrr::map_dfr(papers_list, ~{
+    tibble::tibble(
+      id = .x$id %||% NA_character_,
+      name = .x$name %||% NA_character_,
+      # Safely extract the PDF URL, preferring mainFile over the file list
+      pdf_url = .x$mainFile$accessUrl %||% .x$file[[1]]$accessUrl %||% NA_character_
     )
   })
 }
