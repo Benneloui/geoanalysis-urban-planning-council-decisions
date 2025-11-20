@@ -41,7 +41,6 @@ outputs/
 *_files/
 
 # Large data files (too big for git)
-data-raw/
 *.zip
 *.tar.gz
 *.shp

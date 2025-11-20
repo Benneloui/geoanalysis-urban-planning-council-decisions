@@ -1,73 +1,9 @@
 # Spatial-Temporal Analysis of Municipal Council Decisions
 
-See project proposal: [Proposal.md](Proposal.md)
-
 This project investigates the spatial and temporal patterns of municipal council decisions in City "X". Using council meeting information geodata, it analyzes where and when planning decisions occur over a time.
 
-## Research Questions
 
-> "Where and when is geographically relevant information, in City X, negotiated politically? What anomalies does a spatial-temporal analysis of City Council information in period Y reveal?"
-
-
-## Project Structure
-
-```
-  │
-  ├── 📄 README.md                       ← Project overview
-  ├── 📄 Proposal.md                     ← Research proposal
-  ├── 📄 LICENSE
-  ├── 📄 geomodelierung.Rproj            ← RStudio project file
-  ├── 📄 .gitignore                      ← Git ignore rules
-  │
-  ├── 📂 R/                              ← **REUSABLE FUNCTION LIBRARY**
-  │   ├── README.md                      ← Documentation
-  │   ├── utils.R                        ← General helpers
-  │   ├── oparl_api.R                    ← OParl API integration
-  │   ├── text_analysis.R                ← Text mining for B-Plans
-  │   ├── geocoding.R                    ← Spatial processing
-  │   └── visualization.R                ← Publication plots
-  │
-  ├── 📂 analysis/                       ← **PRODUCTION WORKFLOWS**
-  │   ├── README.md                      ← Workflow documentation
-  │   └── 01_download_data.R             ← Data collection script
-  │
-  ├── 📂 test_demo/                      ← **DEMO & UTILITIES**
-  │   ├── demo_oparl_augsburg.R              ← Proof-of-concept demo
-  │   └── utils/
-  │       └── synthetic_data.R           ← Test data generator
-  │
-  ├── 📂 data-raw/                       ← **RAW DATA** (gitignored)
-  │   ├── README.md                      ← Data collection protocol
-  │   └── council_meetings/              ← Downloaded OParl data (.rds files)
-  │       └──
-  │
-  ├── 📂 data/                           ← **PROCESSED DATA** (git-tracked)
-  │   ├── README.md                      ← Data dictionary
-  │   └──
-  │
-  ├── 📂 vignettes/                      ← **R MARKDOWN REPORTS**
-  │   ├── README.md                      ← Vignette documentation
-  │   └── placeholder.Rmd
-  │
-  ├── 📂 figures/                        ← **PUBLICATION FIGURES** (git-tracked)
-  │   └── (empty - ready for final figures)
-  │
-  ├── 📂 outputs/                        ← **WORKING OUTPUTS** (gitignored, not shown)
-  │   └── figures/                       ← Generated plots during analysis
-  │
-  ├── 📂 docs/                           ← **DOCUMENTATION**
-  │   └── (empty - ready for additional docs)
-  │
-  ├── 📂 presentations/                  ← **PRESENTATIONS**
-  │   └── (empty - ready for slides)
-  │
-  └── 📂 .vscode/                        ← VSCode configuration
-      └── launch.json                    ← Debug configuration
-
-```
-
-
-## Dependencies
+See also the project proposal: [Proposal.md](Proposal.md)
 
 
 ## Contact
