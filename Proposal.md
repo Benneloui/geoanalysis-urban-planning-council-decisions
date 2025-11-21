@@ -1,180 +1,81 @@
-# Project Proposal: Spatial-Temporal Analysis of Municipa Councilmeeting documents
+# Project Proposal: Spatial-Temporal Analysis of Municipal Council Documents
 
-Proseminar - Applied Geodata Science
+**Case Study: City of Augsburg (2020–2025)**
 
-University of Bern
+Proseminar - Applied Geodata Science | University of Bern
 
-**Author:** Benedikt Pilgram
+Author: Benedikt Pilgram
 
-**Supervisor:** Prof. Benjamin Stocker
+Supervisor: Prof. Benjamin Stocker
 
 ## Summary
 
-This project investigates the spatial and temporal patterns of municipal council decisions in a selected German city X. Using council meeting information from OParl APIs, combined with geodata, it analyze where and when decisions occur over a time period. The reproducible R-based workflow can be transferred to other municipalities, contributing methodologically to the intersection of e-government data and spatial planning research.
+This project investigates the spatial and temporal patterns of municipal council decisions in **Augsburg, Germany**. By leveraging the **OParl API** interface, unstructured parliamentary documents (session data and papers) are transformed into structured datasets. The project applies a **hybrid extraction pipeline** combining Named Entity Recognition (NER), Fuzzy Matching, and OpenStreetMap validation to geolocate political activities. The analysis aims to reveal temporal working patterns of the council and spatial distributions of political attention (e.g., center vs. periphery bias).
 
 ## Background and Motivation
 
-Urban planning is a core function of local government, directly affecting citizens' built environment and housing availability. Municipal councils (Gemeinderat, Stadtrat) play a critical decision-making role in adopting, modifying, or rejecting plans. However, the spatial and temporal patterns of these political decisions remain largely intrasperent. But efforts to change this have been made to some extent.
-
-- Municipal council decisions are increasingly digitized and accessible through standards like OParl (Germany) or similar e-government initiatives
-- Development plans become more documented with new standards in municipal geoportals
-
-But critical gaps remain:
-
-- **No comprehensive spatial analysis** of where council planning decisions concentrate within cities
-- **Limited understanding** of temporal dynamics in planning activity (trends, acceleration, seasonal patterns)
-- **Unclear relationship** between designated urban renewal areas and actual political prioritization
-- **Absence of reproducible methods** for analyzing council information spatially
-
-Germany's recent "Bauturbo" policies aim to accelerate development approvals, but their effectiveness may depend on underlying patterns of political attention and administrative capacity. Understanding where and when councils already focus planning efforts provides baseline evidence for evaluating policy impacts. Additionally, the methodology addresses the growing availability of structured municipal data (e-government platforms), demonstrating how open data can inform urban research.
-
-## Objective
-
-**Research Quesiton:**
-> "Where and when is geographically relevant information, in City "Augsburg", negotiated politically? What anomalies does a spatial-temporal analysis of City Council information reveal?"
+Urban planning is a core function of local government, yet the patterns of these decisions often remain hidden in thousands of PDF documents. While digitization standards like **OParl** exist, they are rarely used for quantitative spatial analysis.
 
 
-## Implementation
+## Objectives & Research Questions
 
-#### Data Sources - Dataset 1: Council Meeting Information
+**Primary Research Question:**
 
-**Primary Option - [OPARL](https://github.com/OParl) API:**
-- **Description:** Standardized API for accessing German municipal council information
-- **Format:** JSON (structured data)
-- **Access:** Public APIs from municipalities implementing OParl standard
-- **Variables:** Meeting date, agenda items, titles, full text, decision outcomes, attachments
-- **License:** Typically Open Data (varies by municipality)
+> "How is political attention distributed spatially across the districts of Augsburg, and what temporal patterns define the council's workflow?"
 
-```
-┌─────────────────────────────────────────────────────────┐
-│               Municipal Council System                  │
-│  (What the municipality uses internally)                │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────────────────────────────────┐           │
-│  │  Ratsinformationssystem (RIS)            │           │
-│  │  ──────────────────────────              │           │
-│  │  Commercial products like:               │           │
-│  │  - SessionNet (Somacos)                  │           │
-│  │  - Allris (cc|gis)                       │           │
-│  │  - eSitzung (STERNBERG)                  │           │
-│  │  - Vois (Webforum)                       │           │
-│  └──────────────────┬───────────────────────┘           │
-│                     │                                   │
-│         stores data in ↓                                │
-│                                                         │
-│  ┌──────────────────────────────────────────┐           │
-│  │         Database (Backend)               │           │
-│  │  ────────────────────────                │           │
-│  │  Usually:                                │           │
-│  │  • SQL Server (Microsoft)                │           │
-│  │  • Oracle Database                       │           │
-│  │  • PostgreSQL                            │           │
-│  │  • MySQL/MariaDB                         │           │
-│  │                                          │           │
-│  │  Tables for:                             │           │
-│  │  - Meetings (Sitzungen)                  │           │
-│  │  - Agenda items (Tagesordnungspunkte)    │           │
-│  │  - Papers (Drucksachen)                  │           │
-│  │  - Persons (Personen)                    │           │
-│  │  - Organizations (Gremien)               │           │
-│  │  - Files (Dokumente)                     │           │
-│  └──────────────────┬───────────────────────┘           │
-│                     │                                   │
-│         provides    ↓                                   │
-│                                                         │
-│  ┌──────────────────────────────────────────┐           │
-│  │      OParl API Server                    │           │
-│  │  ────────────────────────                │           │
-│  │  REST API that:                          │           │
-│  │  1. Queries the database                 │           │
-│  │  2. Formats results as JSON              │           │
-│  │  3. Handles pagination                   │           │
-│  │  4. Manages authentication (if needed)   │           │
-│  └──────────────────┬───────────────────────┘           │
-│                     │                                   │
-└─────────────────────┼───────────────────────────────────┘
-                      │
-                      │ HTTP/HTTPS
-                      │ (Public Internet)
-                      ↓
-          ┌─────────────────────────┐
-          │     R Code              │
-          │  ──────────────         │
-          │  library(httr)          │
-          │  GET("/oparl/meeting")  │
-          └─────────────────────────┘
-```
+**Sub-questions:**
+
+1. **Temporal:** When does the council meet? Are there significant shifts in meeting frequencies or times over the legislative period (2020–2025)?
+
+2. **Spatial:** Do certain peripheral districts (e.g., Bergheim, Inningen) receive disproportionately less attention in planning documents compared to the city center?
+
+3. **Methodological:** Can modern NLP (Natural Language Processing) improve the georeferencing of administrative texts compared to standard API lookups?
 
 
-**Socioeconomic indicators (optional):**
-- Source: Census data, statistical yearbooks
-- Variables: Population density, income, demographics
+## Methodology & Implementation
+
+The project moves beyond simple keyword searching by implementing a **Python-based ETL pipeline** (Extract, Transform, Load).
+
+#### 1. Data
+
+- **Source:** Official OParl API of the City of Augsburg (SessionNet).
 
 
-1. **Connecting to OParl API:** Successfully retrieves council meeting data from Augsburg's public OParl endpoint
-2. **Geocoding locations:** Converts district names etc. to coordinates for spatial analysis
-3. **Creating visualizations:**
+#### 2. The "Location Extractor"
 
----
+To solve the problem of unstructured location data in titles (e.g., _"Sanierung der Maxstr."_), a three-stage extraction logic is developed:
 
+1. **NER (Named Entity Recognition):** Using `spaCy` (model: `de_core_news_sm`) to identify location entities in text context.
 
-## Risks and Contingency in this Project
+2. **Ground Truth Validation:** Extracted tokens are matched against a local **OpenStreetMap (OSM) dataset** containing all validated street names in Augsburg (via Overpass API).
 
-### Risk 1: Georeferencing Fails
+3. **Fuzzy Matching:** Using Levenshtein distance (`thefuzz`) to map typos or abbreviations in documents to the correct OSM street name before geocoding.
 
-**Risk Description:**
-- Cannot reliably extract location information from text
-- Geocoding accuracy too low
-- Spatial join unsuccessful
+## Preliminary Results (Proof of Concept)
 
-**Probability:** Medium
-**Impact:** High
+A pilot run of the data pipeline has validated the feasibility:
 
-**Mitigation Strategies:**
-1. **Early testing:** Test georeferencing on sample
-2. **Multiple methods:**
-   - Direct address extraction + geocoding
-   - Plan name matching with B-Plan registry
-   - District name extraction (coarser but more reliable)
-3. **Manual validation:** Hand-check ambiguous cases
-4. **Accept partial success:** 70-80% georeferenced may be sufficient
+- **Data Base:** Successfully harvested **~750 meetings** from Jan 2020 to Nov 2025.
 
-### Risk 2: No Significant Spatial Patterns
+- **Temporal Insight:** Identified a strong preference for **Thursday** meetings starting at **17:00**, with distinct seasonal breaks.
 
-**Risk Description:**
-- Data too sparse for meaningful spatial analysis
+- **Geocoding Success:** The streetnames form the meta Date got successfully geocoded to coordinates.
 
-**Probability:** Low (there's almost always some pattern)
-**Impact:** Medium
+## Tools & Stack
 
-**Mitigation Strategies:**
-1. **Framing:** "No clustering" is itself an interesting finding
-   - Contradicts expectations from literature
-   - Suggests random/equity-driven allocation
-   - Worthy of discussion
+- **Language:** R and Python (VS Code Environment)
 
-### Risk 3: Time Constraints
+- **Data Fetching:** `requests` (with Retry-Adapter)
 
-**Risk Description:**
-- Data collection takes longer than expected
-- Technical difficulties slow analysis
-- Writing takes more time than planned
+- **NLP & Matching:** `spaCy`, `thefuzz`
 
-**Probability:** High (common in research)
-**Impact:** Medium
+- **Geodata:** `geopy` (Nominatim), `Overpass API` (OSM)
 
----
+- **Analysis/Viz:** `pandas`, `matplotlib`, `folium`
 
-*Bibliography will be completed during literature review phase (Weeks 1-2).*
 
 ## Contact Information
 
 Name: Benedikt Pilgram
 
 Email: benedikt.pilgram@student.unibe.ch
-
-
----
-
-*This proposal is a living document. It will be updated as the project evolves, with all changes tracked in the GitHub repository.*
