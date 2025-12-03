@@ -1,6 +1,6 @@
-# Project Proposal: Spatial-Temporal Analysis of Municipal Council Documents
+# Project Proposal: Spatial Analysis of Municipal Council Documents
 
-**Case Study: City of Augsburg (2020–2025)**
+**Case Study: City of Augsburg**
 
 Proseminar - Applied Geodata Science | University of Bern
 
@@ -10,7 +10,7 @@ Supervisor: Prof. Benjamin Stocker
 
 ## Summary
 
-This project investigates the spatial and temporal patterns of municipal council decisions in **Augsburg, Germany**. By leveraging the **OParl API** interface, unstructured parliamentary documents (session data and papers) are transformed into structured datasets. The project applies a **hybrid extraction pipeline** combining Named Entity Recognition (NER), Fuzzy Matching, and OpenStreetMap validation to geolocate political activities. The analysis aims to reveal temporal working patterns of the council and spatial distributions of political attention (e.g., center vs. periphery bias).
+This project investigates municipal council decisions in **Augsburg, Germany**. By leveraging the **OParl API** interface, unstructured parliamentary documents (session data and papers) are transformed into structured datasets. The project applies a **hybrid extraction pipeline** combining Named Entity Recognition (NER), Fuzzy Matching, and OpenStreetMap validation to geolocate political activities. The analysis aims to reveal patterns of the council and spatial distributions of political attention (e.g., center vs. periphery bias).
 
 ## Background and Motivation
 
@@ -27,9 +27,7 @@ Urban planning is a core function of local government, yet the patterns of these
 
 1. **Temporal:** When does the council meet? Are there significant shifts in meeting frequencies or times over the legislative period (2020–2025)?
 
-2. **Spatial:** Do certain peripheral districts (e.g., Bergheim, Inningen) receive disproportionately less attention in planning documents compared to the city center?
-
-3. **Methodological:** Can modern NLP (Natural Language Processing) improve the georeferencing of administrative texts compared to standard API lookups?
+2. **Spatial:** How is political attention (measured by parliamentary activity) distributed spatially across the districts of Augsburg, and does a center-periphery bias exist?
 
 
 ## Methodology & Implementation
@@ -57,13 +55,16 @@ A pilot run of the data pipeline has validated the feasibility:
 
 - **Data Base:** Successfully harvested **~750 meetings** from Jan 2020 to Nov 2025.
 
-- **Temporal Insight:** Identified a strong preference for **Thursday** meetings starting at **17:00**, with distinct seasonal breaks.
-
 - **Geocoding Success:** The streetnames form the meta Date got successfully geocoded to coordinates.
+
+
+## Challenges
+- Augsburg uses NON-STANDARD OParl endpoint names
+- need to analyse the Augsburg OParl Standart first
 
 ## Tools & Stack
 
-- **Language:** R and Python (VS Code Environment)
+- **Language:** Mainly Python (VS Code Environment)
 
 - **Data Fetching:** `requests` (with Retry-Adapter)
 

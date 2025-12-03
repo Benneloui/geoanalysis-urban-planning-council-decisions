@@ -1,10 +1,10 @@
-# Data Directory
+# Raw Data Directory
 
-This folder contains processed, analysis-ready data.
+**Note:** This folder is not tracked in Git (.gitignore).
 
-## Files (to be created):
-- `council_bplan_decisions.csv` - Main analysis dataset
-- `council_bplan_decisions.geojson` - Georeferenced version
-- `districts.geojson` - District boundaries
+Place raw data files here:
+- Council meeting documents (PDFs/JSON)
+- Original shapefiles
+- Downloaded geodata
 
-Run processing scripts to generate these files.
+See `scripts/` folder for data collection scripts.

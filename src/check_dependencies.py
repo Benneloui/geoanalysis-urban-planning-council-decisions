@@ -7,6 +7,7 @@ Prüft ob alle benötigten Pakete installiert sind:
 - spacy (NER)
 - thefuzz (Fuzzy Matching)
 - python-Levenshtein (Performance-Boost für thefuzz)
+- PyMuPDF (PDF Text-Extraktion)
 """
 
 import sys
@@ -34,6 +35,7 @@ def main():
         ("spacy", "spacy"),
         ("thefuzz", "thefuzz"),
         ("python-Levenshtein", "Levenshtein"),
+        ("PyMuPDF", "fitz"),
     ]
 
     all_ok = True
@@ -67,7 +69,7 @@ def main():
         print()
         print("Installation:")
         print("  mamba activate p-grisa-env")
-        print("  mamba install -y spacy thefuzz python-Levenshtein")
+        print("  mamba install -y spacy thefuzz python-Levenshtein pymupdf")
         print("  python -m spacy download de_core_news_sm")
 
     print("=" * 60)

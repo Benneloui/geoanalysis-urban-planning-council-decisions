@@ -1,0 +1,26 @@
+@prefix oparl: <http://example.org/oparl/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+
+oparl:meeting_123 a oparl:Meeting ;
+    dct:date "2024-03-15"^^xsd:date ;
+    dct:title "Stadtratssitzung März 2024" ;
+    oparl:hasAgendaItem oparl:agenda_123_1 .
+
+oparl:agenda_123_1 a oparl:AgendaItem ;
+    oparl:number 1 ;
+    dct:title "Verkehrsplanung Innenstadt" ;
+    oparl:hasDocument oparl:doc_abc ;
+    geo:hasGeometry [
+        a geo:Geometry ;
+        geo:asWKT "POINT(7.4474 46.9481)"^^geo:wktLiteral
+    ] ;
+    oparl:relatedPlace <http://sws.geonames.org/2661763/> .
+
+oparl:doc_abc a oparl:Document ;
+    dct:title "Verkehrsgutachten.pdf" ;
+    dct:created "2024-02-20"^^xsd:date ;
+    oparl:extractedText "..." ;
+    oparl:hasPage 42 .
+

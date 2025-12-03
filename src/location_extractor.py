@@ -3,10 +3,16 @@ import spacy
 from thefuzz import process, fuzz
 import pandas as pd
 import os
+from pathlib import Path
+
+_FILE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = _FILE_DIR.parent
+DEFAULT_OSM_CACHE = PROJECT_ROOT / 'data-raw' / 'augsburg_streets.csv'
 
 class AugsburgLocationExtractor:
-    def __init__(self, osm_cache_path='data-raw/augsburg_streets.csv'):
-        self.osm_cache_path = osm_cache_path
+    def __init__(self, osm_cache_path=None):
+        # Nutze absoluten Pfad relativ zur Projektwurzel
+        self.osm_cache_path = str((Path(osm_cache_path).resolve() if osm_cache_path else DEFAULT_OSM_CACHE))
         self.streets = self._load_or_fetch_osm_streets()
 
         # Lade deutsches KI-Modell für Textverständnis
@@ -21,7 +27,10 @@ class AugsburgLocationExtractor:
         """Holt die 'Ground Truth': Alle Straßennamen in Augsburg."""
         if os.path.exists(self.osm_cache_path):
             print(f"Lade Straßenverzeichnis aus Cache ({self.osm_cache_path})...")
-            return pd.read_csv(self.osm_cache_path)['name'].tolist()
+            try:
+                return pd.read_csv(self.osm_cache_path)['name'].dropna().tolist()
+            except Exception as e:
+                print(f"⚠️ Cache konnte nicht gelesen werden ({e}) – lade neu")
 
         print("Lade Straßenverzeichnis frisch von OpenStreetMap (Overpass API)...")
         # Query: Alle Straßen (highway) in der Relation Augsburg (admin_level=6)
@@ -40,8 +49,11 @@ class AugsburgLocationExtractor:
 
             # Cache speichern
             os.makedirs(os.path.dirname(self.osm_cache_path), exist_ok=True)
-            pd.DataFrame({'name': streets}).to_csv(self.osm_cache_path, index=False)
-            print(f"✓ {len(streets)} Straßen gefunden und gespeichert.")
+            try:
+                pd.DataFrame({'name': streets}).to_csv(self.osm_cache_path, index=False)
+                print(f"✓ {len(streets)} Straßen gefunden und gespeichert.")
+            except Exception as e:
+                print(f"⚠️ Straßenverzeichnis konnte nicht gespeichert werden: {e}")
             return streets
         except Exception as e:
             print(f"❌ Fehler bei OSM Abfrage: {e}")

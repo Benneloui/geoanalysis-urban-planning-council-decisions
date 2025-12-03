@@ -1,4 +1,6 @@
 # Python-Environment
+env/
+.env
 venv/
 my-project-env/
 multi-lang-env/
@@ -23,6 +25,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+logs/
 
 # R-specific
 renv/library/

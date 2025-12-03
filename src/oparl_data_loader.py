@@ -20,9 +20,30 @@ import requests
 import pandas as pd
 import time
 import os
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import re
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+def get_robust_session():
+    """
+    Erstellt eine Session mit automatischer Wiederholung bei Fehlern (Exponential Backoff).
+    """
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+ROBUST_SESSION = get_robust_session()
 
 # Import Smart Location Extractor
 try:
@@ -40,7 +61,23 @@ except ImportError as e:
 
 # Globale Konfiguration
 OPARL_SYSTEM_URL = "https://www.augsburg.sitzung-online.de/public/oparl/system"
-CACHE_DIR = "data-raw"
+# Projektwurzel relativ zu diesem File (R/ liegt direkt unter Root)
+_FILE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = _FILE_DIR.parent  # eine Ebene höher
+DATA_RAW_DIR = PROJECT_ROOT / "data-raw"
+# Als String zusätzlich verfügbar machen für einfache Anzeige
+DATA_RAW_DIR_STR = str(DATA_RAW_DIR)
+CACHE_DIR = DATA_RAW_DIR  # für Rückwärtskompatibilität
+
+# Export-Definition für from ... import ...
+__all__ = [
+    'load_augsburg_data',
+    'fetch_meetings_fast',
+    'load_papers_with_locations',
+    'geocode_locations',
+    'DATA_RAW_DIR',
+    'DATA_RAW_DIR_STR'
+]
 
 # Globale Caches
 _MEETING_ENDPOINT_CACHE = None
@@ -58,7 +95,8 @@ def get_meeting_endpoint():
         return _MEETING_ENDPOINT_CACHE
 
     # Hole System-Objekt
-    system_response = requests.get(OPARL_SYSTEM_URL, timeout=10)
+    system_response = ROBUST_SESSION.get(OPARL_SYSTEM_URL, timeout=30)
+    system_response.raise_for_status()
     system_data = system_response.json()
 
     # Extrahiere Bodies-List-URL
@@ -70,7 +108,8 @@ def get_meeting_endpoint():
         raise ValueError("Keine Body-URL gefunden!")
 
     # Hole Bodies-Liste
-    bodies_response = requests.get(bodies_url, timeout=10)
+    bodies_response = ROBUST_SESSION.get(bodies_url, timeout=30)
+    bodies_response.raise_for_status()
     bodies_data = bodies_response.json()
 
     # Extrahiere das erste Body-Objekt
@@ -82,7 +121,8 @@ def get_meeting_endpoint():
     print(f"✓ Body gefunden: {bodies_list[0].get('name', 'Unbenannt')}")
 
     # Hole vollständiges Body-Objekt
-    body_response = requests.get(body_id, timeout=10)
+    body_response = ROBUST_SESSION.get(body_id, timeout=30)
+    body_response.raise_for_status()
     body_data = body_response.json()
 
     meeting_url = body_data.get('meeting')
@@ -95,72 +135,75 @@ def get_body_data():
     """
     Holt das vollständige Body-Objekt mit allen Endpunkten
     """
-    system_response = requests.get(OPARL_SYSTEM_URL, timeout=10)
+    system_response = ROBUST_SESSION.get(OPARL_SYSTEM_URL, timeout=30)
+    system_response.raise_for_status()
     system_data = system_response.json()
 
     bodies_url = system_data.get('body')
     if isinstance(bodies_url, list):
         bodies_url = bodies_url[0]
 
-    bodies_response = requests.get(bodies_url, timeout=10)
+    bodies_response = ROBUST_SESSION.get(bodies_url, timeout=30)
+    bodies_response.raise_for_status()
     bodies_data = bodies_response.json()
     bodies_list = bodies_data.get('data', [])
 
     body_id = bodies_list[0].get('id')
-    body_response = requests.get(body_id, timeout=10)
+    body_response = ROBUST_SESSION.get(body_id, timeout=30)
+    body_response.raise_for_status()
 
     return body_response.json()
 
 
 def fetch_meetings_fast(limit_pages=50, cache_file=None):
     """
-    Lädt Meetings mit Threading + lokalem Cache
+    Lädt Meetings mit Threading + lokalem Cache.
+    Nutzt eine robuste Session für die API-Aufrufe.
     """
     if cache_file is None:
-        cache_file = os.path.join(CACHE_DIR, 'augsburg_meetings_cache.parquet')
+        cache_file = str(CACHE_DIR / 'augsburg_meetings_cache.parquet')
 
-    # Prüfe Cache
     if os.path.exists(cache_file):
         print(f"📦 Lade Daten aus Cache: {cache_file}")
-        df = pd.read_parquet(cache_file)
-        print(f"✓ {len(df)} Sitzungen aus Cache geladen")
-        return df
+        try:
+            df = pd.read_parquet(cache_file)
+            print(f"✓ {len(df)} Sitzungen aus Cache geladen")
+            return df
+        except Exception as e:
+            print(f"⚠️ Cache konnte nicht gelesen werden ({e}) – lade neu")
 
-    print(f"🌐 Kein Cache gefunden - lade von API mit Threading...")
+    print(f"🌐 Kein Cache gefunden - lade von API mit robuster Session...")
+    print(f"📁 Cache-Ziel: {cache_file}")
 
-    # Sammle Seiten-URLs
     url = get_meeting_endpoint()
     if not url:
         return pd.DataFrame()
 
     page_urls = []
     page_count = 0
-
     print("📋 Sammle Seiten-URLs...")
     while url and page_count < limit_pages:
         page_urls.append(url)
         try:
-            response = requests.get(url, timeout=10)
+            response = ROBUST_SESSION.get(url, timeout=30)
+            response.raise_for_status()
             data = response.json()
-            links = data.get('links', {})
-            url = links.get('next')
+            url = data.get('links', {}).get('next')
             page_count += 1
             if page_count % 10 == 0:
                 print(f"   {page_count} URLs gesammelt...")
-        except Exception as e:
-            print(f"⚠️ Fehler beim URL-Sammeln: {e}")
+        except requests.exceptions.RequestException as e:
+            print(f"  ❌ Endgültig fehlgeschlagen beim Sammeln der URL {url}: {e}")
             break
-
+    
     print(f"✓ {len(page_urls)} Seiten-URLs gesammelt.\n")
 
-    # Paralleles Laden
     def fetch_page(url):
         try:
-            response = requests.get(url, timeout=15)
+            response = ROBUST_SESSION.get(url, timeout=30)
             response.raise_for_status()
             data = response.json()
             items = data.get('data', [])
-
             meetings = []
             for item in items:
                 meetings.append({
@@ -171,12 +214,11 @@ def fetch_meetings_fast(limit_pages=50, cache_file=None):
                 })
             return meetings
         except Exception as e:
-            print(f"⚠️ Fehler bei Seite: {e}")
+            print(f"⚠️ Fehler bei Seite {url}: {e}")
             return []
 
     print("⚡ Lade Seiten parallel (bis zu 10 gleichzeitig)...")
     all_meetings = []
-
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {executor.submit(fetch_page, url): i for i, url in enumerate(page_urls)}
 
@@ -184,17 +226,19 @@ def fetch_meetings_fast(limit_pages=50, cache_file=None):
             page_num = futures[future]
             meetings = future.result()
             all_meetings.extend(meetings)
-            print(f"  ✓ Seite {page_num + 1}/{len(page_urls)}: {len(meetings)} Meetings (Total: {len(all_meetings)})")
+            if (page_num + 1) % 5 == 0 or len(meetings) > 0:
+                 print(f"  ✓ Seite {page_num + 1}/{len(page_urls)}: {len(meetings)} Meetings (Total: {len(all_meetings)})")
 
     print(f"\n✓ {len(all_meetings)} Sitzungen geladen!\n")
 
-    # In DataFrame konvertieren
     df = pd.DataFrame(all_meetings)
-
-    # Cache speichern
+    
     os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-    df.to_parquet(cache_file)
-    print(f"💾 Cache gespeichert: {cache_file}\n")
+    try:
+        df.to_parquet(cache_file)
+        print(f"💾 Cache gespeichert: {cache_file}\n")
+    except Exception as e:
+        print(f"⚠️ Cache konnte nicht gespeichert werden: {e}\n")
 
     return df
 
@@ -210,7 +254,7 @@ def get_organization_name(org_url):
         return _ORG_NAME_CACHE[org_url]
 
     try:
-        response = requests.get(org_url, timeout=10)
+        response = ROBUST_SESSION.get(org_url, timeout=30)
         response.raise_for_status()
         org_data = response.json()
         name = org_data.get('name', org_url)
@@ -297,88 +341,144 @@ def extract_location(text):
     return results
 
 
-def load_papers_with_locations(max_pages=10):
+def load_papers_with_locations(max_pages=10, cache_file=None):
     """
-    Lädt Papers und extrahiert Ortsangaben
+    Lädt Papers und extrahiert Ortsangaben aus Titel und Volltext (PDFs).
+    Implementiert Caching für die extrahierten Orte.
     """
-    print("📄 LADE PAPERS MIT ORTSANGABEN\n")
+    import fitz  # PyMuPDF
 
+    if cache_file is None:
+        cache_file = str(CACHE_DIR / 'extracted_locations.csv')
+
+    # 1. Prüfe, ob bereits extrahierte Orte im Cache liegen
+    if os.path.exists(cache_file):
+        print(f"📦 Lade extrahierte Orte aus Cache: {cache_file}")
+        try:
+            df_locations = pd.read_csv(cache_file)
+            print(f"✓ {len(df_locations)} Orte aus Cache geladen.")
+            return df_locations
+        except Exception as e:
+            print(f"⚠️ Cache konnte nicht gelesen werden ({e}) – Extrahiere neu.")
+
+    print("📄 LADE PAPERS & EXTRAHIERE VOLLTEXT MIT ORTSANGABEN (kein Cache gefunden)\n")
+
+    # 2. Metadaten aller Papers laden
     body_data = get_body_data()
+    paper_url = body_data.get('paper')
+    if not paper_url:
+        print("⚠️ Kein Paper-Endpoint im Body gefunden.")
+        return pd.DataFrame()
+        
+    page_urls = []
+    current_url, page = paper_url, 1
+    print("📋 Sammle Paper-Seiten...")
+    while current_url and page <= max_pages:
+        page_urls.append(current_url)
+        try:
+            response = ROBUST_SESSION.get(current_url, timeout=30)
+            response.raise_for_status()
+            current_url = response.json().get('links', {}).get('next')
+        except requests.exceptions.RequestException:
+            break
+        page += 1
+    print(f"✓ {len(page_urls)} Paper-Seiten zum Laden gefunden.\n")
 
+    all_papers_meta = []
+    print("⚡ Lade Paper-Metadaten parallel...")
     def fetch_paper_page(url):
         try:
-            response = requests.get(url, timeout=15)
-            data = response.json()
-            papers = data.get('data', [])
-            next_url = data.get('links', {}).get('next')
-            return papers, next_url
-        except Exception as e:
-            print(f"⚠️ Fehler: {e}")
-            return [], None
+            resp = ROBUST_SESSION.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.json().get('data', [])
+        except Exception:
+            return []
+            
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        f_meta = {executor.submit(fetch_paper_page, url) for url in page_urls}
+        for future in as_completed(f_meta):
+            all_papers_meta.extend(future.result())
+    print(f"✓ {len(all_papers_meta)} Paper-Metadaten geladen.\n")
 
-    # Sammle Seiten-URLs
-    paper_url = body_data['paper']
-    page_urls = []
-    current = paper_url
-    page = 1
+    # 3. Verbesserte Helfer-Funktion zur PDF-Verarbeitung mit Optimierung
+    def process_paper_fulltext(paper_meta):
+        """
+        Extrahiert Text aus Paper. Präferenz:
+        1. Vorhandenes `text` oder `ocrText` Feld.
+        2. Download und Extraktion von `mainFile` und `auxiliaryFile` PDFs.
+        """
+        # Optimierung: Prüfe auf vor-extrahierten Text
+        if paper_meta.get('text'):
+            return paper_meta['text']
+        if paper_meta.get('ocrText'):
+            return paper_meta['ocrText']
 
-    print("📋 Sammle Paper-Seiten...")
-    while current and page <= max_pages:
-        page_urls.append(current)
-        _, next_url = fetch_paper_page(current)
-        current = next_url
-        page += 1
+        files_to_process, full_text = [], ""
+        if paper_meta.get('mainFile'): files_to_process.append(paper_meta['mainFile'])
+        if paper_meta.get('auxiliaryFile'): files_to_process.extend(paper_meta['auxiliaryFile'])
 
-    print(f"✓ {len(page_urls)} Seiten zum Laden\n")
+        for file_obj in files_to_process:
+            is_pdf = file_obj.get('mimeType') == 'application/pdf' or \
+                     (file_obj.get('accessUrl') and file_obj['accessUrl'].lower().endswith('.pdf'))
+            if not is_pdf or not file_obj.get('accessUrl'): continue
 
-    # Lade parallel
-    all_papers = []
-    print("⚡ Lade Papers parallel...")
+            try:
+                response = ROBUST_SESSION.get(file_obj['accessUrl'], timeout=30)
+                response.raise_for_status()
+                with fitz.open(stream=response.content, filetype="pdf") as doc:
+                    for page in doc:
+                        full_text += page.get_text() + "\n"
+            except (requests.RequestException, RuntimeError):
+                continue
+        return full_text
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(fetch_paper_page, url): i for i, url in enumerate(page_urls)}
+    # 4. Paper-Titel UND Volltext parallel verarbeiten
+    def extract_locations_from_paper(paper_meta):
+        paper_name = paper_meta.get('name', '')
+        paper_text = process_paper_fulltext(paper_meta)
+        combined_text = f"{paper_name}\n\n{paper_text}"
+        locations = extract_location(combined_text)
+        
+        return [{
+            'location': loc, 'paper_name': paper_name, 'paper_id': paper_meta.get('id'),
+            'date': paper_meta.get('date'), 'type': paper_meta.get('paperType', 'Unbekannt')
+        } for loc in locations]
 
-        for future in as_completed(futures):
-            page_num = futures[future]
-            papers, _ = future.result()
-            all_papers.extend(papers)
+    print(f"⚡ Verarbeite {len(all_papers_meta)} Papers parallel (inkl. PDF-Download & Text-Extraktion)...")
+    
+    # 5. Parallele Ausführung
+    all_locations = []
+    processed_count = 0
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        f_locations = {executor.submit(extract_locations_from_paper, meta): meta for meta in all_papers_meta}
+        for future in as_completed(f_locations):
+            processed_count += 1
+            all_locations.extend(future.result())
+            if processed_count % 20 == 0:
+                print(f"  ... {processed_count}/{len(all_papers_meta)} Papers verarbeitet, {len(all_locations)} Orte gefunden.")
 
-    print(f"\n✓ {len(all_papers)} Papers geladen!\n")
+    print(f"\n✓ {processed_count}/{len(all_papers_meta)} Papers vollständig verarbeitet.\n")
 
-    # Extrahiere Ortsangaben mit Smart Extractor
-    print("🗺️  EXTRAHIERE ORTSANGABEN...\n")
-
-    locations_in_papers = []
-    for paper in all_papers:
-        name = paper.get('name', '')
-        locations = extract_location(name)  # Jetzt gibt's Liste zurück!
-
-        # Jede gefundene Location als separate Zeile
-        for location in locations:
-            locations_in_papers.append({
-                'location': location,
-                'paper_name': name,
-                'paper_id': paper.get('id'),
-                'date': paper.get('date'),
-                'type': paper.get('paperType', 'Unbekannt')
-            })
-
-    df_locations = pd.DataFrame(locations_in_papers)
-
+    # 6. Ergebnis in DataFrame umwandeln und cachen
+    df_locations = pd.DataFrame(all_locations)
     if not df_locations.empty:
-        print(f"📊 {len(df_locations)} Ortsangaben in {len(all_papers)} Papers gefunden")
-        print(f"   Das sind {len(df_locations)/len(all_papers)*100:.1f}% der Papers")
+        # Cache speichern
+        try:
+            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+            df_locations.to_csv(cache_file, index=False)
+            print(f"💾 Extrahiere Orte im Cache gespeichert: {cache_file}")
+        except Exception as e:
+            print(f"⚠️ Orte-Cache konnte nicht gespeichert werden: {e}")
 
-        # Zeige Statistik
+        # Statistik
+        papers_with_locs = df_locations['paper_id'].nunique()
+        print(f"📊 {len(df_locations)} Ortsangaben in {papers_with_locs} einzigartigen Papers gefunden.")
+        if len(all_papers_meta) > 0:
+            print(f"   Das sind {papers_with_locs/len(all_papers_meta)*100:.1f}% der Papers.")
         unique_locations = df_locations['location'].nunique()
-        print(f"   {unique_locations} eindeutige Orte")
-
-        if _USE_SMART_EXTRACTOR:
-            print(f"   ✅ Smart Extractor (NER + OSM) verwendet\n")
-        else:
-            print(f"   ⚠️  Fallback Regex verwendet\n")
+        print(f"   {unique_locations} eindeutige Orte gefunden.")
     else:
-        print(f"⚠️  Keine Ortsangaben in {len(all_papers)} Papers gefunden\n")
+        print(f"⚠️  Keine Ortsangaben in {len(all_papers_meta)} Papers gefunden.\n")
 
     return df_locations
 
@@ -470,6 +570,9 @@ def load_augsburg_data(
     print("AUGSBURG OPARL DATA LOADER")
     print("="*60)
     print(f"Zeitraum: {date_from} bis {date_to}\n")
+    print(f"🔧 Arbeitsverzeichnis: {os.getcwd()}")
+    print(f"📂 DATA_RAW_DIR: {DATA_RAW_DIR}")
+    print(f"🧩 Loader-Datei: {_FILE_DIR}")
 
     # 1. Lade Meetings
     df = fetch_meetings_fast(limit_pages=max_meeting_pages)
@@ -497,11 +600,11 @@ def load_augsburg_data(
         df_clean = pd.DataFrame()
 
     # 3. Lade Papers (optional)
-    if load_papers and not df_clean.empty:
+    if load_papers:
         df_locations = load_papers_with_locations(max_pages=max_paper_pages)
 
         # 4. Geocode (optional)
-        if geocode_locations_flag and not df_locations.empty:
+        if geocode_locations_flag and df_locations is not None and not df_locations.empty:
             df_geocoded = geocode_locations(df_locations)
             return df_clean, df_locations, df_geocoded
 
