@@ -1,37 +1,70 @@
 # Geomodelierung - Analysis of Municipal Council Decisions
 
-**Automatisierte Extraktion, Geocodierung und Analyse von kommunalen Ratsbeschlüssen aus OParl-APIs**
+## Summary
 
-Dieses Projekt untersucht Ratsbeschlüsse in Augsburg unter Verwendung der OParl-API. Die Pipeline extrahiert automatisch Ortsinformationen aus PDF-Dokumenten, geocodiert diese und stellt die Ergebnisse in verschiedenen Formaten bereit (Parquet, RDF/Linked Data, GeoJSON).
+This project investigates municipal council decisions in **Augsburg, Germany**. By leveraging the **OParl API** interface, unstructured parliamentary documents (session data and papers) are transformed into structured datasets. The project applies a **hybrid extraction pipeline** combining Named Entity Recognition (NER), Fuzzy Matching, and OpenStreetMap validation to geolocate political activities. The analysis aims to reveal patterns of the council and spatial distributions of political attention (e.g., center vs. periphery bias).
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![R Version](https://img.shields.io/badge/R-%3E%3D%204.3.0-blue.svg)](https://www.r-project.org/)
+## Background and Motivation
 
-## 🎯 Features
+Urban planning is a core function of local government, yet the patterns of these decisions often remain hidden in thousands of PDF documents. While digitization standards like **OParl** exist, they are rarely used for quantitative spatial analysis.
 
-### Core Pipeline
-- ✅ **OParl API Integration** - Automatisches Abrufen von Ratsbeschlüssen
-- ✅ **PDF Text Extraction** - Multi-Strategie (PyMuPDF → pdfplumber → OCR)
-- ✅ **Location Extraction** - NER + Regex für Straßen, B-Pläne, Flurstücke
-- ✅ **Geocoding** - Hierarchisches Geocoding mit Nominatim
-- ✅ **Multi-Format Output** - Parquet, RDF/Turtle, GeoJSON
-- ✅ **Crash Recovery** - SQLite-basiertes State Management
-- ✅ **Batch Processing** - Effiziente Verarbeitung großer Datenmengen
 
-### Data Enrichment (Optional)
-- 🔗 **Wikidata Linking** - Verknüpfung mit Wikidata-Entities
-- 🌍 **GeoNames Integration** - Administrative Hierarchien
-- 🏷️ **Topic Categorization** - ML-basierte Themenkategorisierung
-- 💬 **Sentiment Analysis** - Sentiment-Analyse deutscher Texte
+## Objectives & Research Questions
 
-### Quality Assurance
-- ✅ **Comprehensive Test Suite** - 80+ Unit & Integration Tests
-- ✅ **SHACL Validation** - RDF Shape Validation
-- ✅ **Data Quality Checks** - Automatische Validierung
-- ✅ **Coverage Reports** - HTML Coverage Reports
+**Primary Research Question:**
 
-## 📂 Project Structure
+> "How is political attention distributed spatially across the districts of Augsburg, and what temporal patterns define the council's workflow?"
+
+**Sub-questions:**
+
+1. **Temporal:** When does the council meet? Are there significant shifts in meeting frequencies or times over the legislative period (2020–2025)?
+
+2. **Spatial:** How is political attention (measured by parliamentary activity) distributed spatially across the districts of Augsburg, and does a center-periphery bias exist?
+
+
+## Methodology & Implementation
+
+The project moves beyond simple keyword searching by implementing a **Python-based ETL pipeline** (Extract, Transform, Load).
+
+#### 1. Data
+
+- **Source:** Official OParl API of the City of Augsburg (SessionNet).
+
+
+#### 2. The "Location Extractor"
+
+To solve the problem of unstructured location data in titles (e.g., _"Sanierung der Maxstr."_), a three-stage extraction logic is developed:
+
+1. **NER (Named Entity Recognition):** Using `spaCy` (model: `de_core_news_sm`) to identify location entities in text context.
+
+2. **Ground Truth Validation:** Extracted tokens are matched against a local **OpenStreetMap (OSM) dataset** containing all validated street names in Augsburg (via Overpass API).
+
+3. **Fuzzy Matching:** Using Levenshtein distance (`thefuzz`) to map typos or abbreviations in documents to the correct OSM street name before geocoding.
+
+## Preliminary Results (Proof of Concept)
+
+A pilot run of the data pipeline has validated the feasibility:
+
+- **Data Base:** Successfully harvested **~750 meetings** from Jan 2020 to Nov 2025.
+
+- **Geocoding Success:** The streetnames form the meta Date got successfully geocoded to coordinates.
+
+
+## Challenges
+- Augsburg uses NON-STANDARD OParl endpoint names
+- need to analyse the Augsburg OParl Standart first
+
+## Tools & Stack
+
+- **Language:** Mainly Python (VS Code Environment)
+
+- **Data Fetching:** `requests` (with Retry-Adapter)
+
+- **NLP & Matching:** `spaCy`, `thefuzz`
+
+- **Geodata:** `geopy` (Nominatim), `Overpass API` (OSM)
+
+- **Analysis/Viz:** `pandas`, `matplotlib`, `folium`
 
 ```
 Geomodelierung/
@@ -66,221 +99,6 @@ Geomodelierung/
 ├── ENRICHMENT.md           # Enrichment documentation
 └── IMPLEMENTATION_SUMMARY.md
 
-## 🚀 Quick Start
-
-### 1. Installation
-
-```bash
-# Clone repository
-git clone https://github.com/benneloui/geoanalysis-urban-planning-council-decisions.git
-cd geoanalysis-urban-planning-council-decisions
-
-# Create virtual environment
-python -m venv env
-source env/bin/activate  # On Windows: env\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Download spaCy model
-python -m spacy download de_core_news_lg
-```
-
-### 2. Test-Run
-
-```bash
-# Quick test with 10 papers
-python scripts/run_pipeline.py --test
-
-# Output:
-# ✓ data/papers_parquet/         (Papers + Locations)
-# ✓ data/ttl/augsburg_oparl.ttl  (RDF Graph)
-# ✓ data/augsburg_locations.geojson
-```
-
-### 3. Production Run
-
-```bash
-# Full pipeline for Augsburg
-python scripts/run_pipeline.py --city augsburg
-
-# With date range
-python scripts/run_pipeline.py \
-    --city augsburg \
-    --start-date 2024-01-01 \
-    --end-date 2024-12-31
-
-# Incremental update
-python scripts/run_pipeline.py \
-    --city augsburg \
-    --start-date 2024-12-01
-```
-
-## 📊 Usage Examples
-
-### Python: Load and Analyze Data
-
-```python
-import pandas as pd
-import geopandas as gpd
-
-# Load papers
-papers_df = pd.read_parquet('data/papers_parquet')
-print(f"Papers: {len(papers_df)}")
-
-# Load locations
-locations_df = pd.read_parquet('data/papers_parquet')
-locations_df = locations_df[locations_df['coordinates'].notna()]
-print(f"Geocoded locations: {len(locations_df)}")
-
-# Create map
-gdf = gpd.read_file('data/augsburg_locations.geojson')
-gdf.plot(figsize=(10, 10))
-```
-
-### SPARQL: Query RDF Graph
-
-```sparql
-PREFIX oparl: <https://schema.oparl.org/1.1/>
-PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-
-SELECT ?paper ?name ?location ?lat ?lon
-WHERE {
-  ?paper a oparl:Paper ;
-         oparl:name ?name ;
-         geo:location ?loc .
-  ?loc geo:lat ?lat ;
-       geo:long ?lon .
-}
-LIMIT 10
-```
-
-### Web Map (Leaflet/Mapbox)
-
-```javascript
-// Load GeoJSON
-fetch('data/augsburg_locations.geojson')
-  .then(response => response.json())
-  .then(data => {
-    L.geoJSON(data, {
-      onEachFeature: (feature, layer) => {
-        layer.bindPopup(`
-          <b>${feature.properties.text}</b><br>
-          Type: ${feature.properties.type}<br>
-          <a href="${feature.properties.pdf_url}">PDF öffnen</a>
-        `);
-      }
-    }).addTo(map);
-  });
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-python tests/run_tests.py
-
-# Unit tests only
-python tests/run_tests.py --unit
-
-# With coverage report
-python tests/run_tests.py --coverage
-
-# Fast tests (skip slow ones)
-python tests/run_tests.py --fast
-```
-
-See [TESTING.md](TESTING.md) for detailed documentation.
-
-## ✅ Validation
-
-```python
-from src.validation import ValidationReportGenerator
-from rdflib import Graph
-
-# Load RDF graph
-graph = Graph()
-graph.parse('data/ttl/augsburg_oparl.ttl', format='turtle')
-
-# Validate
-generator = ValidationReportGenerator(Path('validation_reports'))
-report = generator.generate_report(rdf_graph=graph)
-
-# Generate HTML report
-generator.save_report(report, format='html')
-
-print(f"Valid: {report.is_valid()}")
-print(f"Errors: {report.summary['errors']}")
-```
-
-## 🔗 Enrichment (Optional)
-
-```python
-from src.enrichment import WikidataEnricher, TopicCategorizer
-
-# Wikidata linking
-enricher = WikidataEnricher()
-location = {'text': 'Maximilianstraße', 'type': 'street'}
-enriched = enricher.link_location(location, city='Augsburg')
-print(f"Wikidata: {enriched.wikidata_id}")
-
-# Topic categorization
-categorizer = TopicCategorizer()
-paper = {'name': 'Bebauungsplan...', 'pdf_text': '...'}
-categorized = categorizer.categorize_paper(paper)
-print(paper['categories'])
-```
-
-See [ENRICHMENT.md](ENRICHMENT.md) for detailed documentation.
-
-## 📖 Documentation
-
-- **[QUICKSTART.md](QUICKSTART.md)** - Schnelleinstieg für User
-- **[TESTING.md](TESTING.md)** - Testing & Validation Guide
-- **[ENRICHMENT.md](ENRICHMENT.md)** - Data Enrichment Guide
-- **[Proposal.md](Proposal.md)** - Original Project Proposal
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Implementation Details
-
-## 🛠️ Configuration
-
-Edit `config.yaml`:
-
-```yaml
-oparl:
-  system_url: "https://ris.augsburg.de/oparl/v1.1"
-  timeout: 30
-  retry_count: 3
-
-extraction:
-  batch_size: 10
-  use_ocr: false
-
-geocoding:
-  service: "nominatim"
-  rate_limit: 1
-
-storage:
-  base_path: "data"
-  parquet:
-    partition_cols: ["city", "year"]
-```
-
-## 📦 Dependencies
-
-Core dependencies:
-- `requests`, `pandas`, `pyarrow`, `pyyaml`
-- `rdflib` (RDF/Linked Data)
-- `geopy` (Geocoding)
-- `PyMuPDF`, `pdfplumber` (PDF extraction)
-- `spacy` (NER)
-
-Optional:
-- `pytest`, `pytest-cov` (Testing)
-- `pyshacl` (SHACL validation)
-- `transformers`, `torch` (Sentiment analysis)
-
-See [requirements.txt](requirements.txt) for full list.
-
 ## 🤝 Contributing
 
 Contributions welcome! Please:
@@ -297,16 +115,6 @@ Contributions welcome! Please:
 ## 👤 Contact
 
 **Benedikt Pilgram**
-- Email: benedikt.pilgram@student.unibe.ch
 - GitHub: [@benneloui](https://github.com/benneloui)
 
-## 🙏 Acknowledgments
 
-- OParl API: https://oparl.org/
-- Wikidata: https://www.wikidata.org/
-- GeoNames: https://www.geonames.org/
-- Stadt Augsburg Open Data
-
----
-
-See also the project proposal: [Proposal.md](Proposal.md)
