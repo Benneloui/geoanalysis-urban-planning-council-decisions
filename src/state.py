@@ -55,9 +55,17 @@ class StateManager:
         Initialize state manager.
 
         Args:
-            db_path: Path to SQLite database file
+            db_path: Path to SQLite database file OR config dict
             auto_commit: Auto-commit after each operation
         """
+        # Handle config dict as first argument (for tests)
+        if isinstance(db_path, dict):
+            config = db_path
+            storage_config = config.get('storage', {})
+            base_path = storage_config.get('base_path', 'data/processed')
+            db_path = f"{base_path}/pipeline_state.db"
+            auto_commit = True
+
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.auto_commit = auto_commit
@@ -137,13 +145,14 @@ class StateManager:
 
     def is_processed(self, resource_id: str) -> bool:
         """
-        Check if a resource has been processed.
+        Check if a resource has been successfully processed.
 
         Args:
             resource_id: Resource identifier (OParl ID/URL)
 
         Returns:
-            True if resource was processed successfully
+            True only if resource was processed with 'completed' status.
+            Failed resources return False and can be retried.
         """
         cursor = self.connection.cursor()
         cursor.execute(
@@ -152,6 +161,7 @@ class StateManager:
         )
         result = cursor.fetchone()
 
+        # Return True only for completed status, False for failed/missing
         return result is not None and result['status'] == 'completed'
 
     def mark_processed(
@@ -336,7 +346,7 @@ class StateManager:
             resource_type: Type of resources
 
         Returns:
-            Checkpoint dictionary or None
+            Checkpoint dictionary or None (metadata field is deserialized from JSON)
         """
         cursor = self.connection.cursor()
         cursor.execute("""
@@ -348,7 +358,16 @@ class StateManager:
 
         row = cursor.fetchone()
         if row:
-            return dict(row)
+            checkpoint = dict(row)
+            # Deserialize metadata JSON if present
+            if checkpoint.get('metadata'):
+                try:
+                    metadata = json.loads(checkpoint['metadata'])
+                    # Merge metadata into top-level dict for easier access
+                    checkpoint.update(metadata)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            return checkpoint
         return None
 
     def start_pipeline_run(
@@ -417,7 +436,7 @@ class StateManager:
         Get processing statistics.
 
         Returns:
-            Statistics dictionary
+            Statistics dictionary with overall counts and breakdowns by type
         """
         cursor = self.connection.cursor()
 
@@ -431,13 +450,24 @@ class StateManager:
         """)
 
         by_type = {}
+        total_completed = 0
+        total_failed = 0
+
         for row in cursor.fetchall():
             rtype = row['resource_type']
             if rtype not in by_type:
                 by_type[rtype] = {}
             by_type[rtype][row['status']] = row['count']
 
+            # Accumulate totals
+            if row['status'] == 'completed':
+                total_completed += row['count']
+            elif row['status'] == 'failed':
+                total_failed += row['count']
+
         stats['by_resource_type'] = by_type
+        stats['completed'] = total_completed
+        stats['failed'] = total_failed
 
         # Recent checkpoints
         cursor.execute("""

@@ -137,14 +137,15 @@ class TestSpatialProcessor:
             {'text': 'Königsplatz', 'type': 'place'}
         ]
 
-        with patch.object(processor, '_geocode_location') as mock_geocode:
+        with patch.object(processor, 'geocode') as mock_geocode:
             mock_geocode.return_value = {
-                'text': 'Test',
-                'type': 'street',
-                'coordinates': {'lat': 48.0, 'lon': 11.0}
+                'latitude': 48.0,
+                'longitude': 11.0,
+                'display_name': 'Test Location',
+                'cached': False
             }
 
-            geocoded = processor.geocode_batch(locations, 'augsburg')
+            geocoded = processor.geocode_batch(locations)
 
             assert len(geocoded) == 2
             assert mock_geocode.call_count == 2
@@ -163,8 +164,8 @@ class TestSpatialProcessor:
         # Save to cache
         processor._save_to_cache('maximilianstraße-augsburg', location)
 
-        # Load from cache
-        cached = processor._load_from_cache('maximilianstraße-augsburg')
+        # Load from cache - check it was saved
+        cached = processor.cache.get('maximilianstraße-augsburg')
 
         assert cached is not None
         assert cached['coordinates']['lat'] == 48.0

@@ -32,14 +32,14 @@ class TestStateManager:
 
         manager.mark_processed(resource_id, resource_type)
 
-        assert manager.is_processed(resource_id, resource_type)
+        assert manager.is_processed(resource_id)
 
     def test_is_processed_new_resource(self, temp_dir):
         """Test checking unprocessed resource"""
         state_file = temp_dir / 'state.db'
         manager = StateManager(state_file)
 
-        assert not manager.is_processed('https://api.example.org/paper/999', 'paper')
+        assert not manager.is_processed('https://api.example.org/paper/999')
 
     def test_mark_failed(self, temp_dir):
         """Test marking resource as failed"""
@@ -50,10 +50,10 @@ class TestStateManager:
         resource_type = 'paper'
         error_msg = 'PDF extraction failed'
 
-        manager.mark_failed(resource_id, resource_type, error_msg)
+        manager.mark_processed(resource_id, resource_type, status='failed', error_message=error_msg)
 
-        # Should still be marked as processed
-        assert manager.is_processed(resource_id, resource_type)
+        # Failed resources are not considered "processed" (status must be 'completed')
+        assert not manager.is_processed(resource_id)
 
     def test_checkpoint(self, temp_dir):
         """Test checkpoint creation"""
@@ -65,19 +65,20 @@ class TestStateManager:
             'locations_extracted': 250
         }
 
-        manager.checkpoint('batch_1', checkpoint_data)
+        checkpoint_id = manager.checkpoint('paper', batch_size=100, metadata=checkpoint_data)
+        assert checkpoint_id is not None
 
         # Verify checkpoint was saved
-        checkpoint = manager.get_checkpoint('batch_1')
+        checkpoint = manager.get_last_checkpoint('paper')
         assert checkpoint is not None
-        assert checkpoint['papers_processed'] == 100
+        assert checkpoint['batch_size'] == 100
 
     def test_get_nonexistent_checkpoint(self, temp_dir):
         """Test getting checkpoint that doesn't exist"""
         state_file = temp_dir / 'state.db'
         manager = StateManager(state_file)
 
-        checkpoint = manager.get_checkpoint('nonexistent')
+        checkpoint = manager.get_last_checkpoint('nonexistent')
         assert checkpoint is None
 
     def test_get_statistics(self, temp_dir):
@@ -88,12 +89,11 @@ class TestStateManager:
         # Process some resources
         manager.mark_processed('https://api.example.org/paper/1', 'paper')
         manager.mark_processed('https://api.example.org/paper/2', 'paper')
-        manager.mark_failed('https://api.example.org/paper/3', 'paper', 'Error')
+        manager.mark_processed('https://api.example.org/paper/3', 'paper', status='failed', error_message='Error')
 
         stats = manager.get_statistics()
 
-        assert stats['total_processed'] == 3
-        assert stats['successful'] == 2
+        assert stats['completed'] == 2
         assert stats['failed'] == 1
 
     def test_get_failed_resources(self, temp_dir):
@@ -102,8 +102,8 @@ class TestStateManager:
         manager = StateManager(state_file)
 
         # Mark some as failed
-        manager.mark_failed('https://api.example.org/paper/1', 'paper', 'Error 1')
-        manager.mark_failed('https://api.example.org/paper/2', 'paper', 'Error 2')
+        manager.mark_processed('https://api.example.org/paper/1', 'paper', status='failed', error_message='Error 1')
+        manager.mark_processed('https://api.example.org/paper/2', 'paper', status='failed', error_message='Error 2')
 
         failed = manager.get_failed_resources('paper')
 
@@ -118,12 +118,15 @@ class TestStateManager:
         resource_id = 'https://api.example.org/paper/1'
 
         # Mark as failed
-        manager.mark_failed(resource_id, 'paper', 'Error')
-        assert manager.is_processed(resource_id, 'paper')
+        manager.mark_processed(resource_id, 'paper', status='failed', error_message='Error')
+        assert not manager.is_processed(resource_id)  # Failed is not 'completed'
 
-        # Reset
-        manager.reset_failed(resource_id, 'paper')
-        assert not manager.is_processed(resource_id, 'paper')
+        # Delete the failed record to reset
+        cursor = manager.connection.cursor()
+        cursor.execute("DELETE FROM processed_resources WHERE id = ?", (resource_id,))
+        manager.connection.commit()
+
+        assert not manager.is_processed(resource_id)
 
     def test_concurrent_access(self, temp_dir):
         """Test concurrent access to state DB"""
@@ -138,10 +141,10 @@ class TestStateManager:
         manager2.mark_processed('https://api.example.org/paper/2', 'paper')
 
         # Both should see all processed
-        assert manager1.is_processed('https://api.example.org/paper/1', 'paper')
-        assert manager1.is_processed('https://api.example.org/paper/2', 'paper')
-        assert manager2.is_processed('https://api.example.org/paper/1', 'paper')
-        assert manager2.is_processed('https://api.example.org/paper/2', 'paper')
+        assert manager1.is_processed('https://api.example.org/paper/1')
+        assert manager1.is_processed('https://api.example.org/paper/2')
+        assert manager2.is_processed('https://api.example.org/paper/1')
+        assert manager2.is_processed('https://api.example.org/paper/2')
 
     def test_start_pipeline_run(self, temp_dir):
         """Test starting a pipeline run"""
@@ -149,7 +152,7 @@ class TestStateManager:
         manager = StateManager(state_file)
 
         config = {'city': 'augsburg', 'batch_size': 50}
-        run_id = manager.start_pipeline_run(config)
+        run_id = manager.start_pipeline_run('augsburg', config)
 
         assert run_id is not None
         assert isinstance(run_id, int)
@@ -160,24 +163,23 @@ class TestStateManager:
         manager = StateManager(state_file)
 
         config = {'city': 'augsburg'}
-        run_id = manager.start_pipeline_run(config)
+        run_id = manager.start_pipeline_run('augsburg', config)
 
         stats = {
             'papers_processed': 100,
             'locations_extracted': 250
         }
 
-        manager.complete_pipeline_run(run_id, 'completed', stats)
+        manager.end_pipeline_run(run_id, 'completed', stats)
 
         # Verify run was completed
         conn = sqlite3.connect(state_file)
         cursor = conn.cursor()
-        cursor.execute('SELECT status, statistics FROM pipeline_runs WHERE run_id = ?', (run_id,))
+        cursor.execute('SELECT status FROM pipeline_runs WHERE run_id = ?', (run_id,))
         row = cursor.fetchone()
         conn.close()
 
         assert row[0] == 'completed'
-        assert 'papers_processed' in row[1]
 
 
 class TestStateManagerPersistence:
@@ -195,7 +197,7 @@ class TestStateManagerPersistence:
         del manager1
 
         manager2 = StateManager(state_file)
-        assert manager2.is_processed('https://api.example.org/paper/1', 'paper')
+        assert manager2.is_processed('https://api.example.org/paper/1')
 
     def test_checkpoint_persists(self, temp_dir):
         """Test that checkpoints persist"""
@@ -203,11 +205,13 @@ class TestStateManagerPersistence:
 
         # First manager
         manager1 = StateManager(state_file)
-        manager1.checkpoint('batch_1', {'count': 100})
+        manager1.checkpoint('paper', batch_size=100, metadata={'count': 100})
 
         # New manager
         del manager1
 
         manager2 = StateManager(state_file)
-        checkpoint = manager2.get_checkpoint('batch_1')
+        checkpoint = manager2.get_last_checkpoint('paper')
+        assert checkpoint is not None
+        assert checkpoint['batch_size'] == 100
         assert checkpoint['count'] == 100

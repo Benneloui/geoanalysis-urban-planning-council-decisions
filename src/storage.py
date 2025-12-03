@@ -53,15 +53,20 @@ class ParquetWriter:
         Initialize Parquet writer.
 
         Args:
-            base_dir: Base directory for output
+            base_dir: Base directory for output OR config dict
             partition_cols: Columns for partitioning
             compression: Compression algorithm
             config_path: Path to config.yaml (optional)
         """
-        self.base_dir = Path(base_dir)
-
-        # Load config if provided
-        if config_path:
+        # Handle config dict as first argument (for tests)
+        if isinstance(base_dir, dict):
+            config = base_dir
+            storage_config = config.get('storage', {})
+            base_dir = storage_config.get('base_path', "data/processed/council_data.parquet")
+            parquet_config = storage_config.get('parquet', {})
+            self.partition_cols = parquet_config.get('partition_cols', ['city', 'year'])
+            self.compression = parquet_config.get('compression', 'snappy')
+        elif config_path:
             config = self._load_config(config_path)
             proc = config.get('processing', {}).get('parquet', {})
             self.partition_cols = partition_cols or proc.get('partition_cols', ['city', 'year'])
@@ -70,6 +75,7 @@ class ParquetWriter:
             self.partition_cols = partition_cols or ['city', 'year']
             self.compression = compression
 
+        self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"ParquetWriter initialized: {self.base_dir}")
         logger.info(f"Partitioning: {self.partition_cols}, Compression: {self.compression}")
@@ -140,10 +146,14 @@ class ParquetWriter:
         # Convert to PyArrow Table
         table = pa.Table.from_pandas(df)
 
+        # Create papers subdirectory for parquet files
+        papers_dir = self.base_dir / 'papers'
+        papers_dir.mkdir(parents=True, exist_ok=True)
+
         # Write with partitioning
         pq.write_to_dataset(
             table,
-            root_path=str(self.base_dir),
+            root_path=str(papers_dir),
             partition_cols=self.partition_cols,
             compression=self.compression,
             existing_data_behavior='overwrite_or_ignore' if append else 'delete_matching'
@@ -163,35 +173,48 @@ class ParquetWriter:
             logger.warning(f"No data found at {self.base_dir}")
             return pd.DataFrame()
 
-        dataset = pq.ParquetDataset(
-            str(self.base_dir),
-            use_legacy_dataset=False
-        )
+        # Look for parquet files specifically, not database files
+        parquet_path = self.base_dir / 'papers'
+        if not parquet_path.exists():
+            logger.warning(f"No parquet data found at {parquet_path}")
+            return pd.DataFrame()
+
+        dataset = pq.ParquetDataset(str(parquet_path))
 
         table = dataset.read()
         df = table.to_pandas()
 
-        logger.info(f"Read {len(df)} rows from {self.base_dir}")
+        logger.info(f"Read {len(df)} rows from {parquet_path}")
         return df
 
     def read_partition(self, city: str, year: Optional[int] = None) -> pd.DataFrame:
         """
-        Read specific partition.
+        Read data for specific city/year partition.
 
         Args:
             city: City name
-            year: Year (optional)
+            year: Year (optional, reads all years if not specified)
 
         Returns:
             Filtered DataFrame
         """
+        papers_path = self.base_dir / 'papers'
+        if not papers_path.exists():
+            logger.warning(f"No parquet data found at {papers_path}")
+            return pd.DataFrame()
+
         df = self.read_all()
 
+        if df.empty:
+            return df
+
+        # Filter by city
         df = df[df['city'] == city]
-        if year:
+
+        # Filter by year if specified
+        if year is not None:
             df = df[df['year'] == year]
 
-        logger.info(f"Read {len(df)} rows for {city}/{year or 'all years'}")
         return df
 
     def write_locations_table(
@@ -293,10 +316,19 @@ class RDFWriter:
         Initialize RDF writer.
 
         Args:
-            output_file: Output file path (.nt or .ttl)
+            output_file: Output file path (.nt or .ttl) OR config dict
             base_uri: Base URI for resources
             config_path: Path to config.yaml (optional)
         """
+        # Handle config dict as first argument (for tests)
+        if isinstance(output_file, dict):
+            config = output_file
+            storage_config = config.get('storage', {})
+            base_path = storage_config.get('base_path', "data/processed")
+            output_file = f"{base_path}/metadata.nt"
+            rdf_config = storage_config.get('rdf', {})
+            base_uri = rdf_config.get('namespace', "http://augsburg.oparl-analytics.org/")
+
         self.output_file = Path(output_file)
         self.output_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -348,20 +380,19 @@ class RDFWriter:
         if not paper.get('id'):
             return
 
-        # Create URI
-        paper_id = self._extract_id(paper['id'])
-        paper_uri = URIRef(f"{self.base_uri}paper/{paper_id}")
+        # Create URI - use the original OParl ID as URI
+        paper_uri = URIRef(paper['id'])
 
-        # Type
-        self.graph.add((paper_uri, RDF.type, self.OPARL.Paper))
+        # Type - use the full OParl schema URL
+        self.graph.add((paper_uri, RDF.type, URIRef('https://schema.oparl.org/1.1/Paper')))
 
         # Properties
         if paper.get('name'):
             self.graph.add((paper_uri, RDFS.label, Literal(paper['name'], lang='de')))
-            self.graph.add((paper_uri, self.OPARL.name, Literal(paper['name'])))
+            self.graph.add((paper_uri, DCTERMS.title, Literal(paper['name'])))
 
         if paper.get('reference'):
-            self.graph.add((paper_uri, self.OPARL.reference, Literal(paper['reference'])))
+            self.graph.add((paper_uri, DCTERMS.identifier, Literal(paper['reference'])))
 
         if paper.get('date'):
             try:
@@ -374,20 +405,22 @@ class RDFWriter:
             except:
                 pass
 
-        if paper.get('type'):
-            self.graph.add((paper_uri, self.OPARL.paperType, Literal(paper['type'])))
+        if paper.get('paperType'):
+            self.graph.add((paper_uri, DCTERMS.type, Literal(paper['paperType'])))
 
         if paper.get('full_text'):
             self.graph.add((
                 paper_uri,
-                self.OPARL.text,
+                DCTERMS.description,
                 Literal(paper['full_text'][:1000])  # Truncate for RDF
             ))
 
-        # PDF URL
-        if paper.get('pdf_url'):
-            file_uri = URIRef(paper['pdf_url'])
-            self.graph.add((paper_uri, self.OPARL.mainFile, file_uri))
+        # PDF URL - handle mainFile dict structure
+        if paper.get('mainFile'):
+            main_file = paper['mainFile']
+            if isinstance(main_file, dict) and main_file.get('accessUrl'):
+                file_uri = URIRef(main_file['accessUrl'])
+                self.graph.add((paper_uri, DCTERMS.hasFormat, file_uri))
 
         # Timestamps
         if paper.get('created'):
@@ -508,7 +541,10 @@ class RDFWriter:
     def add_spatial_relation(
         self,
         paper_id: str,
-        location: str,
+        location_text: str = None,
+        location: str = None,
+        latitude: float = None,
+        longitude: float = None,
         wkt: Optional[str] = None,
         geo_uri: Optional[str] = None
     ):
@@ -516,23 +552,42 @@ class RDFWriter:
         Add spatial relationship to a paper.
 
         Args:
-            paper_id: Paper ID
-            location: Location name
+            paper_id: Paper ID (full URI)
+            location_text: Location name/text (preferred parameter name)
+            location: Location name (legacy parameter name)
+            latitude: Latitude coordinate
+            longitude: Longitude coordinate
             wkt: WKT geometry (optional)
             geo_uri: GeoNames/external URI (optional)
         """
-        paper_uri = URIRef(f"{self.base_uri}paper/{paper_id}")
+        # Support both location_text and location parameters
+        location_name = location_text or location
+        if not location_name:
+            return
+
+        paper_uri = URIRef(paper_id)
 
         # Create location node
-        loc_id = location.replace(' ', '_').replace(',', '')
+        loc_id = location_name.replace(' ', '_').replace(',', '').replace('/', '-')
         loc_uri = URIRef(f"{self.base_uri}location/{loc_id}")
 
-        self.graph.add((paper_uri, self.OPARL.relatesToLocation, loc_uri))
+        self.graph.add((paper_uri, self.GEO_NS.hasGeometry, loc_uri))
         self.graph.add((loc_uri, RDF.type, self.GEO_NS.Feature))
-        self.graph.add((loc_uri, RDFS.label, Literal(location, lang='de')))
+        self.graph.add((loc_uri, RDFS.label, Literal(location_name, lang='de')))
 
-        # Add WKT geometry
-        if wkt:
+        # Add coordinates if provided
+        if latitude is not None and longitude is not None:
+            wkt = f"POINT({longitude} {latitude})"
+            self.graph.add((
+                loc_uri,
+                self.GEO_NS.hasGeometry,
+                Literal(wkt, datatype=self.GEO_NS.wktLiteral)
+            ))
+            self.graph.add((loc_uri, self.GEO_NS.lat, Literal(latitude, datatype=XSD.double)))
+            self.graph.add((loc_uri, self.GEO_NS.long, Literal(longitude, datatype=XSD.double)))
+
+        # Add WKT geometry if provided directly
+        elif wkt:
             self.graph.add((
                 loc_uri,
                 self.GEO_NS.hasGeometry,

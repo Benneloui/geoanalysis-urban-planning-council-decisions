@@ -17,8 +17,22 @@ def temp_dir():
 def mock_config():
     """Mock configuration for testing"""
     return {
+        'project': {
+            'name': 'Test OParl Pipeline',
+            'city': 'augsburg',
+            'version': '0.1'
+        },
         'oparl': {
+            'endpoints': {
+                'augsburg': 'https://api.oparl.org/v1.1/system'
+            },
             'system_url': 'https://api.oparl.org/v1.1',
+            'start_date': '2023-01-01T00:00:00Z',
+            'end_date': '2025-12-31T23:59:59Z',
+            'http_timeout_sec': 40,
+            'retry_attempts': 5,
+            'retry_pause_sec': 2,
+            'max_pages_meetings': 50,
             'timeout': 30,
             'retry_count': 3,
             'rate_limit': 10

@@ -53,13 +53,22 @@ class OParlClient:
         Initialize OParl API Client.
 
         Args:
-            city: City name matching config.yaml endpoints
+            city: City name matching config.yaml endpoints OR config dict
             config_path: Path to config.yaml (optional, auto-detects if None)
             timeout: HTTP request timeout in seconds
         """
-        self.city = city.lower()
-        self.timeout = timeout
-        self.config = self._load_config(config_path)
+        # Handle config dict as first argument (for tests)
+        if isinstance(city, dict):
+            config = city
+            self.config = config
+            oparl_config = config.get('oparl', {})
+            self.city = config.get('project', {}).get('city', 'augsburg').lower()
+            self.timeout = oparl_config.get('http_timeout_sec', 40)
+        else:
+            self.city = city.lower()
+            self.timeout = timeout
+            self.config = self._load_config(config_path)
+
         self.session = self._create_session()
         self.base_uri = f"http://{self.city}.oparl-analytics.org/"
 
@@ -138,7 +147,7 @@ class OParlClient:
 
     def _get_json(self, url: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Fetch JSON from URL with error handling.
+        Fetch JSON from URL with retry logic and error handling.
 
         Args:
             url: API endpoint URL
@@ -148,15 +157,27 @@ class OParlClient:
             Parsed JSON response
 
         Raises:
-            requests.exceptions.RequestException: On network/HTTP errors
+            requests.exceptions.RequestException: On network/HTTP errors after all retries
         """
-        try:
-            response = self.session.get(url, params=params, timeout=self.timeout)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching {url}: {e}")
-            raise
+        max_retries = self.retry_attempts
+        retry_delay = self.retry_pause
+
+        for attempt in range(max_retries):
+            try:
+                response = self.session.get(url, params=params, timeout=self.timeout)
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                    logger.warning(f"Request failed (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Error fetching {url} after {max_retries} attempts: {e}")
+                    raise
+
+        # Should never reach here, but satisfy type checker
+        raise requests.exceptions.RequestException(f"Failed to fetch {url}")
 
     def get_system(self) -> Dict[str, Any]:
         """
@@ -276,10 +297,15 @@ class OParlClient:
                     print(f"Paper: {paper['name']}")
         """
         body = self.get_body()
+        # OParl spec: body object has 'paper' key pointing to papers endpoint URL
         papers_url = body.get('paper')
 
         if not papers_url:
-            raise ValueError("No papers endpoint found in body")
+            # Fallback: try alternative key names from different OParl implementations
+            papers_url = body.get('paper_url') or body.get('papers')
+
+        if not papers_url:
+            raise ValueError(f"No papers endpoint found in body. Available keys: {list(body.keys())}")
 
         params = {}
         if start_date or self.start_date:
@@ -308,10 +334,15 @@ class OParlClient:
             Meeting objects
         """
         body = self.get_body()
+        # OParl spec: body object has 'meeting' key pointing to meetings endpoint URL
         meetings_url = body.get('meeting')
 
         if not meetings_url:
-            raise ValueError("No meetings endpoint found in body")
+            # Fallback: try alternative key names from different OParl implementations
+            meetings_url = body.get('meeting_url') or body.get('meetings')
+
+        if not meetings_url:
+            raise ValueError(f"No meetings endpoint found in body. Available keys: {list(body.keys())}")
 
         if limit_pages is None:
             limit_pages = self.max_pages_meetings

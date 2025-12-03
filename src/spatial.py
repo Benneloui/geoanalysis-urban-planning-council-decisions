@@ -72,20 +72,33 @@ class SpatialProcessor:
         Initialize spatial processor.
 
         Args:
-            city: City name for geocoding context
+            city: City name for geocoding context OR config dict
             cache_file: Path to geocoding cache JSON file
             rate_limit_sec: Minimum seconds between geocoding requests
             timeout: Geocoding request timeout
         """
-        self.city = city.title()
-        self.rate_limit = rate_limit_sec
-        self.timeout = timeout
+        # Handle config dict as first argument (for tests)
+        if isinstance(city, dict):
+            config = city
+            geocoding_config = config.get('geocoding', {})
+            self.city = config.get('project', {}).get('city', 'augsburg').title()
+            cache_file = geocoding_config.get('cache_file')
+            self.rate_limit = geocoding_config.get('rate_limit', 1.0)
+            self.timeout = geocoding_config.get('timeout', 10)
+            user_agent = geocoding_config.get('user_agent', f"oparl-pipeline-{self.city}")
+        else:
+            self.city = city.title()
+            self.rate_limit = rate_limit_sec
+            self.timeout = timeout
+            user_agent = f"oparl-pipeline-{self.city}"
+
         self._last_request_time = 0
 
-        # Initialize geocoder
+        # Initialize geocoder with user_agent
+        self.user_agent = user_agent
         self.geocoder = Nominatim(
-            user_agent=f"oparl-pipeline-{city}",
-            timeout=timeout
+            user_agent=user_agent,
+            timeout=self.timeout
         )
 
         # Setup cache
@@ -109,6 +122,22 @@ class SpatialProcessor:
 
         # Compile regex patterns
         self._compile_patterns()
+
+        # Load street list if available
+        self.streets = self._load_street_list()
+
+    def _load_street_list(self) -> List[str]:
+        """Load known street names for the city."""
+        street_file = Path("data") / f"{self.city}_streets.csv"
+        if street_file.exists():
+            try:
+                import pandas as pd
+                df = pd.read_csv(street_file)
+                # Assume first column contains street names
+                return df.iloc[:, 0].tolist()
+            except Exception as e:
+                logger.debug(f"Could not load street list: {e}")
+        return []
 
         logger.info(f"SpatialProcessor initialized for {self.city}")
         logger.info(f"Cache: {len(self.cache)} entries")
@@ -135,6 +164,16 @@ class SpatialProcessor:
         except Exception as e:
             logger.warning(f"Could not save cache: {e}")
 
+    def _save_to_cache(self, key: str, value: Dict[str, Any]):
+        """
+        Save a single result to the cache.
+
+        Args:
+            key: Cache key
+            value: Location data to cache
+        """
+        self.cache[key] = value
+
     def _compile_patterns(self):
         """Compile regex patterns for spatial entity extraction."""
         # Bebauungsplan (B-Plan) patterns
@@ -152,6 +191,12 @@ class SpatialProcessor:
         # German address patterns (street + number)
         self.address_pattern = re.compile(
             r'([A-ZÄÖÜ][a-zäöüß]+(?:straße|str\.|platz|weg|allee|gasse))\s+(\d+[a-z]?)',
+            re.IGNORECASE
+        )
+
+        # Street name patterns (without number)
+        self.street_pattern = re.compile(
+            r'\b([A-ZÄÖÜ][a-zäöüß-]+(?:straße|str\.|platz|weg|allee|gasse))\b',
             re.IGNORECASE
         )
 
@@ -210,7 +255,8 @@ class SpatialProcessor:
                 for loc in smart_locations:
                     locations.append({
                         'type': 'address',
-                        'value': loc,
+                        'text': loc,  # Use 'text' for consistency
+                        'value': loc,  # Keep 'value' for backward compatibility
                         'method': 'ner',
                         **base_fields
                     })
@@ -219,9 +265,11 @@ class SpatialProcessor:
 
         # 2. B-Plan extraction
         for match in self.bplan_pattern.finditer(text):
+            bplan_value = match.group(1).strip()
             locations.append({
                 'type': 'bplan',
-                'value': match.group(1).strip(),
+                'text': bplan_value,  # Use 'text' for consistency
+                'value': bplan_value,  # Keep 'value' for backward compatibility
                 'method': 'regex',
                 'context': match.group(0),
                 **base_fields
@@ -229,9 +277,11 @@ class SpatialProcessor:
 
         # 3. Flurnummer extraction
         for match in self.flur_pattern.finditer(text):
+            flur_value = match.group(1).strip()
             locations.append({
                 'type': 'flurnummer',
-                'value': match.group(1).strip(),
+                'text': flur_value,  # Use 'text' for consistency
+                'value': flur_value,  # Keep 'value' for backward compatibility
                 'method': 'regex',
                 'context': match.group(0),
                 **base_fields
@@ -241,12 +291,30 @@ class SpatialProcessor:
         for match in self.address_pattern.finditer(text):
             street = match.group(1).strip()
             number = match.group(2).strip()
+            full_address = f"{street} {number}"
             locations.append({
                 'type': 'address',
-                'value': f"{street} {number}",
+                'text': full_address,  # Use 'text' for consistency
+                'value': full_address,  # Keep 'value' for backward compatibility
                 'method': 'regex',
                 **base_fields
             })
+
+        # Extract streets already found in addresses to avoid duplicates
+        found_streets = {loc['text'].split()[0].lower() for loc in locations if loc.get('type') == 'address'}
+
+        # 4.5. Street name extraction (without house number)
+        for match in self.street_pattern.finditer(text):
+            street = match.group(1).strip()
+            # Avoid duplicates with addresses
+            if street.lower() not in found_streets:
+                locations.append({
+                    'type': 'street',
+                    'text': street,  # Use 'text' for consistency
+                    'value': street,  # Keep 'value' for backward compatibility
+                    'method': 'regex',
+                    **base_fields
+                })
 
         # 5. District extraction
         for match in self.district_pattern.finditer(text):
@@ -254,14 +322,17 @@ class SpatialProcessor:
             if len(district) > 3:  # Filter out too short matches
                 locations.append({
                     'type': 'district',
-                    'value': district,
+                    'text': district,  # Use 'text' for consistency
+                    'value': district,  # Keep 'value' for backward compatibility
                     'method': 'regex',
                     **base_fields
-                })        # Deduplicate
+                })
+
+        # Deduplicate
         seen = set()
         unique_locations = []
         for loc in locations:
-            key = (loc['type'], loc['value'].lower())
+            key = (loc['type'], loc.get('text', loc.get('value', '')).lower())
             if key not in seen:
                 seen.add(key)
                 unique_locations.append(loc)
@@ -279,6 +350,30 @@ class SpatialProcessor:
     def _cache_key(self, query: str) -> str:
         """Generate cache key for a geocoding query."""
         return hashlib.md5(query.lower().encode()).hexdigest()
+
+    def _geocode_location(self, location: Dict[str, Any], city: str = None) -> Optional[Dict[str, Any]]:
+        """
+        Geocode a single location dictionary from extract_locations.
+
+        Args:
+            location: Location dictionary with 'text' and 'type'
+            city: City name for context
+
+        Returns:
+            Enriched location dict with coordinates or None
+        """
+        city_name = city or self.city
+        location_text = location.get('text', location.get('value', ''))
+        location_type = location.get('type', 'address')
+
+        result = self.geocode(location_text, location_type)
+        if result:
+            # Add coordinates key for tests
+            enriched = {**location, **result}
+            if 'latitude' in result and 'longitude' in result:
+                enriched['coordinates'] = {'lat': result['latitude'], 'lon': result['longitude']}
+            return enriched
+        return {**location, 'geocoded': False}
 
     def geocode(
         self,
@@ -389,7 +484,9 @@ class SpatialProcessor:
         logger.info(f"Geocoding {len(locations)} locations")
 
         for i, loc in enumerate(locations):
-            result = self.geocode(loc['value'], loc['type'])
+            # Use 'text' or fall back to 'value' for location name
+            location_text = loc.get('text', loc.get('value', ''))
+            result = self.geocode(location_text, loc.get('type', 'address'))
 
             if result:
                 enriched = {**loc, **result}
@@ -439,7 +536,7 @@ class SpatialProcessor:
         Extract and geocode locations from papers.
 
         Args:
-            papers: List of paper dictionaries with 'full_text' field
+            papers: List of paper dictionaries with 'full_text' or 'pdf_text' field
 
         Returns:
             Papers enriched with 'locations' field
@@ -449,10 +546,15 @@ class SpatialProcessor:
         enriched = []
 
         for paper in papers:
-            text = paper.get('full_text', '')
+            # Support both 'full_text' and 'pdf_text' keys
+            text = paper.get('full_text') or paper.get('pdf_text', '')
 
             if not text:
-                enriched.append(paper)
+                # Add empty locations list even if no text
+                paper_copy = paper.copy()
+                paper_copy['locations'] = []
+                paper_copy['location_count'] = 0
+                enriched.append(paper_copy)
                 continue
 
             # Extract locations with paper_id and pdf_url tracking

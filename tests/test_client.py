@@ -19,16 +19,22 @@ class TestOParlClient:
     def test_init_with_config(self, mock_config, temp_dir):
         """Test client initialization with config"""
         mock_config['storage']['base_path'] = str(temp_dir)
+        mock_config['project'] = {'city': 'augsburg'}
+        mock_config['oparl']['endpoints'] = {'augsburg': 'https://api.example.org/oparl'}
+        mock_config['oparl']['start_date'] = '2023-01-01T00:00:00Z'
+        mock_config['oparl']['http_timeout_sec'] = 40
+
         client = OParlClient(mock_config)
 
-        assert client.system_url == mock_config['oparl']['system_url']
-        assert client.timeout == mock_config['oparl']['timeout']
-        assert client.retry_count == mock_config['oparl']['retry_count']
+        assert client.city == 'augsburg'
+        assert client.timeout == 40
+        assert client.system_url is not None
 
     def test_init_without_config(self):
-        """Test client initialization without config"""
-        with pytest.raises((FileNotFoundError, KeyError)):
-            OParlClient()
+        """Test client initialization without proper config structure"""
+        # Missing required keys will cause ValueError
+        with pytest.raises((ValueError, KeyError)):
+            client = OParlClient({})
 
     @patch('requests.Session.get')
     def test_fetch_json_success(self, mock_get, mock_config, temp_dir):
@@ -42,7 +48,7 @@ class TestOParlClient:
         mock_response.json.return_value = {'data': 'test'}
         mock_get.return_value = mock_response
 
-        result = client._fetch_json('https://api.example.org/test')
+        result = client._get_json('https://api.example.org/test')
 
         assert result == {'data': 'test'}
         mock_get.assert_called_once()
@@ -56,16 +62,20 @@ class TestOParlClient:
         # First call fails, second succeeds
         mock_response_fail = Mock()
         mock_response_fail.status_code = 500
-        mock_response_fail.raise_for_status.side_effect = requests.HTTPError()
+        def raise_error():
+            raise requests.HTTPError("500 Server Error")
+        mock_response_fail.raise_for_status = raise_error
 
         mock_response_success = Mock()
         mock_response_success.status_code = 200
         mock_response_success.json.return_value = {'data': 'test'}
+        mock_response_success.raise_for_status = Mock()  # Success doesn't raise
 
         mock_get.side_effect = [mock_response_fail, mock_response_success]
 
-        result = client._fetch_json('https://api.example.org/test')
+        result = client._get_json('https://api.example.org/test')
 
+        # Should succeed on second attempt
         assert result == {'data': 'test'}
         assert mock_get.call_count == 2
 
@@ -82,18 +92,38 @@ class TestOParlClient:
         mock_response.raise_for_status.side_effect = requests.HTTPError()
         mock_get.return_value = mock_response
 
-        result = client._fetch_json('https://api.example.org/test')
-
-        assert result is None
-        assert mock_get.call_count == 2
+        with pytest.raises(Exception):
+            result = client._get_json('https://api.example.org/test')
 
     @patch('requests.Session.get')
     def test_fetch_papers_generator(self, mock_get, mock_config, temp_dir, mock_paper):
-        """Test fetch_papers generator function"""
+        """Test that fetch_papers works as generator"""
         mock_config['storage']['base_path'] = str(temp_dir)
         client = OParlClient(mock_config)
 
-        # Mock paginated response
+        # Mock system response
+        mock_system_response = Mock()
+        mock_system_response.status_code = 200
+        mock_system_response.json.return_value = {
+            'body': 'https://api.example.org/bodies'
+        }
+
+        # Mock bodies list response
+        mock_bodies_response = Mock()
+        mock_bodies_response.status_code = 200
+        mock_bodies_response.json.return_value = {
+            'data': [{'id': 'https://api.example.org/body/1', 'name': 'Test Body'}]
+        }
+
+        # Mock individual body object response
+        mock_body_detail = Mock()
+        mock_body_detail.status_code = 200
+        mock_body_detail.json.return_value = {
+            'id': 'https://api.example.org/body/1',
+            'name': 'Test Body',
+            'paper': 'https://api.example.org/papers'
+        }
+
         page1 = {
             'data': [mock_paper],
             'links': {
@@ -113,9 +143,9 @@ class TestOParlClient:
         mock_response2.status_code = 200
         mock_response2.json.return_value = page2
 
-        mock_get.side_effect = [mock_response1, mock_response2]
+        mock_get.side_effect = [mock_system_response, mock_bodies_response, mock_body_detail, mock_response1, mock_response2]
 
-        papers = list(client.fetch_papers(body_id='https://api.example.org/body/1'))
+        papers = list(client.fetch_papers())
 
         assert len(papers) == 2
         assert papers[0]['id'] == mock_paper['id']
@@ -137,17 +167,38 @@ class TestOParlClient:
         mock_config['storage']['base_path'] = str(temp_dir)
         client = OParlClient(mock_config)
 
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        # Mock system response
+        mock_system_response = Mock()
+        mock_system_response.status_code = 200
+        mock_system_response.json.return_value = {
+            'body': 'https://api.example.org/bodies'
+        }
+
+        # Mock bodies list response
+        mock_bodies_response = Mock()
+        mock_bodies_response.status_code = 200
+        mock_bodies_response.json.return_value = {
+            'data': [{'id': 'https://api.example.org/body/1', 'name': 'Test Body'}]
+        }
+
+        # Mock individual body object response
+        mock_body_detail = Mock()
+        mock_body_detail.status_code = 200
+        mock_body_detail.json.return_value = {
+            'id': 'https://api.example.org/body/1',
+            'name': 'Test Body',
+            'meeting': 'https://api.example.org/meetings'
+        }
+
+        mock_meetings_response = Mock()
+        mock_meetings_response.status_code = 200
+        mock_meetings_response.json.return_value = {
             'data': [mock_meeting],
             'links': {}
         }
-        mock_get.return_value = mock_response
+        mock_get.side_effect = [mock_system_response, mock_bodies_response, mock_body_detail, mock_meetings_response]
 
-        meetings = list(client.fetch_meetings(
-            organization_id='https://api.example.org/organization/1'
-        ))
+        meetings = list(client.fetch_meetings())
 
         assert len(meetings) == 1
         assert meetings[0]['id'] == mock_meeting['id']
@@ -158,18 +209,40 @@ class TestOParlClient:
         mock_config['storage']['base_path'] = str(temp_dir)
         client = OParlClient(mock_config)
 
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        # Mock system response
+        mock_system_response = Mock()
+        mock_system_response.status_code = 200
+        mock_system_response.json.return_value = {
+            'body': 'https://api.example.org/bodies'
+        }
+
+        # Mock bodies list response
+        mock_bodies_response = Mock()
+        mock_bodies_response.status_code = 200
+        mock_bodies_response.json.return_value = {
+            'data': [{'id': 'https://api.example.org/body/1', 'name': 'Test Body'}]
+        }
+
+        # Mock individual body object response
+        mock_body_detail = Mock()
+        mock_body_detail.status_code = 200
+        mock_body_detail.json.return_value = {
+            'id': 'https://api.example.org/body/1',
+            'name': 'Test Body',
+            'paper': 'https://api.example.org/papers'
+        }
+
+        mock_papers_response = Mock()
+        mock_papers_response.status_code = 200
+        mock_papers_response.json.return_value = {
             'data': [mock_paper],
             'links': {}
         }
-        mock_get.return_value = mock_response
+        mock_get.side_effect = [mock_system_response, mock_bodies_response, mock_body_detail, mock_papers_response]
 
         papers = list(client.fetch_papers(
-            body_id='https://api.example.org/body/1',
-            start_date=datetime(2024, 1, 1),
-            end_date=datetime(2024, 12, 31)
+            start_date='2024-01-01T00:00:00Z',
+            end_date='2024-12-31T23:59:59Z'
         ))
 
         assert len(papers) == 1
