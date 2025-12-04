@@ -26,6 +26,8 @@ wheels/
 *.egg
 MANIFEST
 logs/
+vignettes/
+archive/
 
 # R-specific
 renv/library/
