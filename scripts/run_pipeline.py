@@ -12,8 +12,7 @@ Pipeline stages:
 4. Geocode locations
 5. Write to Parquet (partitioned)
 6. Write to RDF (incremental N-Triples)
-7. Export locations table
-8. Generate GeoJSON for mapping
+7. Generate GeoJSON for mapping
 
 Usage:
     # Run with default config
@@ -94,7 +93,7 @@ class PipelineOrchestrator:
         self.extractor = PDFExtractor(
             timeout=self.config['oparl']['http_timeout_sec']
         )
-        self.spatial = SpatialProcessor(city=self.city)
+        self.spatial = SpatialProcessor(city=self.city, config=self.config)
 
         # Initialize writers
         parquet_dir = self._resolve_path(
@@ -120,7 +119,7 @@ class PipelineOrchestrator:
             'papers_failed': 0,
             'locations_extracted': 0,
             'locations_geocoded': 0,
-            'start_time': None,
+            'start_time': None,  # Will be converted to string when serializing
             'end_time': None
         }
 
@@ -205,10 +204,7 @@ class PipelineOrchestrator:
                 skip_existing=skip_existing
             )
 
-            # Stage 2: Export locations table
-            self._export_locations()
-
-            # Stage 3: Export GeoJSON for mapping
+            # Stage 2: Export GeoJSON for mapping
             self._export_geojson()
 
             # Stage 4: Finalize RDF (convert to Turtle)
@@ -219,7 +215,12 @@ class PipelineOrchestrator:
             duration = (self.stats['end_time'] - self.stats['start_time']).total_seconds()
             self.stats['duration_seconds'] = duration
 
-            self.state.end_pipeline_run(run_id, status='completed', stats=self.stats)
+            # Convert datetime to ISO strings for JSON serialization
+            stats_serializable = self.stats.copy()
+            stats_serializable['start_time'] = self.stats['start_time'].isoformat()
+            stats_serializable['end_time'] = self.stats['end_time'].isoformat()
+
+            self.state.end_pipeline_run(run_id, status='completed', stats=stats_serializable)
 
             # Print summary
             self._print_summary()
@@ -228,7 +229,15 @@ class PipelineOrchestrator:
 
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}", exc_info=True)
-            self.state.end_pipeline_run(run_id, status='failed', stats=self.stats)
+
+            # Convert datetime to ISO strings for JSON serialization
+            stats_serializable = self.stats.copy()
+            if self.stats.get('start_time'):
+                stats_serializable['start_time'] = self.stats['start_time'].isoformat()
+            if self.stats.get('end_time'):
+                stats_serializable['end_time'] = self.stats['end_time'].isoformat()
+
+            self.state.end_pipeline_run(run_id, status='failed', stats=stats_serializable)
             raise
 
         finally:
@@ -337,29 +346,34 @@ class PipelineOrchestrator:
 
         # Stage 1: Extract text from PDFs
         self.logger.info("  → Extracting PDF text...")
-        extracted = self.extractor.extract_batch(
+        extraction_results = self.extractor.extract_batch(
             papers,
             max_workers=3,  # Conservative to avoid overwhelming servers
             delay_between_downloads=1.0
         )
 
-        # Filter out failed extractions
-        valid_papers = [p for p in extracted if p.get('full_text')]
-        failed_count = len(extracted) - len(valid_papers)
+        # Merge extraction results back into papers
+        valid_papers = []
+        for paper, result in zip(papers, extraction_results):
+            if result.success and result.text:
+                # Add extracted text to paper
+                paper['full_text'] = result.text
+                paper['extraction_method'] = result.method
+                paper['page_count'] = result.page_count
+                valid_papers.append(paper)
+            else:
+                # Mark failed papers in state
+                self.state.mark_processed(
+                    paper['id'],
+                    'paper',
+                    status='failed',
+                    error_message=result.error or 'PDF extraction failed'
+                )
+                self.stats['papers_failed'] += 1
 
+        failed_count = len(papers) - len(valid_papers)
         if failed_count > 0:
             self.logger.warning(f"  → {failed_count} papers failed text extraction")
-            self.stats['papers_failed'] += failed_count
-
-            # Mark failed papers in state
-            for paper in extracted:
-                if not paper.get('full_text'):
-                    self.state.mark_processed(
-                        paper['id'],
-                        'paper',
-                        status='failed',
-                        error_message='PDF extraction failed'
-                    )
 
         if not valid_papers:
             self.logger.warning("  → No valid papers in batch, skipping")
@@ -404,50 +418,27 @@ class PipelineOrchestrator:
 
         return len(enriched_papers)
 
-    def _export_locations(self):
-        """Export separate locations table."""
+    def _export_geojson(self):
+        """Export GeoJSON for web mapping."""
         self.logger.info("\n" + "=" * 70)
-        self.logger.info("STAGE 2: EXPORTING LOCATIONS TABLE")
+        self.logger.info("STAGE 2: EXPORTING GEOJSON FOR MAPPING")
         self.logger.info("=" * 70)
 
-        # Read all papers
+        # Read papers directly from parquet
         df_papers = self.parquet_writer.read_partition(city=self.city)
 
         if df_papers.empty:
-            self.logger.warning("No papers found, skipping locations export")
+            self.logger.warning("No papers found, skipping GeoJSON export")
             return
 
         # Convert to list of dicts
         papers_list = df_papers.to_dict('records')
 
-        # Write locations table
-        locations_file = Path(self.config['paths']['processed']) / f"{self.city}_locations.parquet"
-        count = self.parquet_writer.write_locations_table(
-            papers_list,
-            city=self.city,
-            output_file=str(locations_file)
-        )
-
-        self.logger.info(f"✓ Locations table created: {count} rows")
-        self.logger.info(f"  File: {locations_file}")
-
-    def _export_geojson(self):
-        """Export GeoJSON for web mapping."""
-        self.logger.info("\n" + "=" * 70)
-        self.logger.info("STAGE 3: EXPORTING GEOJSON FOR MAPPING")
-        self.logger.info("=" * 70)
-
-        locations_file = Path(self.config['paths']['processed']) / f"{self.city}_locations.parquet"
-
-        if not locations_file.exists():
-            self.logger.warning("Locations file not found, skipping GeoJSON export")
-            return
-
         output_file = Path(self.config['paths']['processed']) / f"{self.city}_map.geojson"
 
         geojson = export_locations_for_map(
-            str(locations_file),
-            str(output_file),
+            papers_with_locations=papers_list,
+            output_file=str(output_file),
             filter_city=self.city
         )
 
@@ -458,7 +449,7 @@ class PipelineOrchestrator:
     def _finalize_rdf(self):
         """Finalize RDF output (convert N-Triples to Turtle)."""
         self.logger.info("\n" + "=" * 70)
-        self.logger.info("STAGE 4: FINALIZING RDF OUTPUT")
+        self.logger.info("STAGE 3: FINALIZING RDF OUTPUT")
         self.logger.info("=" * 70)
 
         # Serialize to final format

@@ -24,6 +24,8 @@ import logging
 import time
 import re
 import json
+import ssl
+import certifi
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
@@ -66,7 +68,8 @@ class SpatialProcessor:
         city: str = "augsburg",
         cache_file: Optional[str] = None,
         rate_limit_sec: float = 1.0,
-        timeout: int = 10
+        timeout: int = 10,
+        config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize spatial processor.
@@ -76,6 +79,7 @@ class SpatialProcessor:
             cache_file: Path to geocoding cache JSON file
             rate_limit_sec: Minimum seconds between geocoding requests
             timeout: Geocoding request timeout
+            config: Configuration dictionary
         """
         # Handle config dict as first argument (for tests)
         if isinstance(city, dict):
@@ -92,14 +96,42 @@ class SpatialProcessor:
             self.timeout = timeout
             user_agent = f"oparl-pipeline-{self.city}"
 
+        # Store config for later use
+        self.config = config or {}
+        geocoding_config = self.config.get('geocoding', {})
+
         self._last_request_time = 0
 
-        # Initialize geocoder with user_agent
+        # Initialize geocoder with user_agent and SSL settings
         self.user_agent = user_agent
+        verify_ssl = geocoding_config.get('verify_ssl', True)
+
+        # Create SSL context for Nominatim
+        if verify_ssl:
+            ssl_context = ssl.create_default_context(cafile=certifi.where())
+        else:
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+
         self.geocoder = Nominatim(
             user_agent=user_agent,
-            timeout=self.timeout
+            timeout=self.timeout,
+            ssl_context=ssl_context
         )
+
+        # Load blocklist from config
+        self.blocklist = set(
+            w.lower() for w in self.config.get('location_extraction', {}).get('blocklist', [])
+        )
+        self.min_location_length = self.config.get('location_extraction', {}).get('min_length', 3)
+        self.max_location_length = self.config.get('location_extraction', {}).get('max_length', 60)
+
+        # Load gazetteer (streets, districts) for validation
+        self.streets_gazetteer = self._load_gazetteer('streets')
+        self.districts_gazetteer = self._load_gazetteer('districts')
+
+        logger.info(f"Loaded {len(self.streets_gazetteer)} streets and {len(self.districts_gazetteer)} districts")
 
         # Setup cache
         if cache_file is None:
@@ -174,8 +206,47 @@ class SpatialProcessor:
         """
         self.cache[key] = value
 
+    def _load_gazetteer(self, gazetteer_type: str) -> set:
+        """
+        Load gazetteer data (streets or districts) from GeoJSON.
+
+        Args:
+            gazetteer_type: 'streets' or 'districts'
+
+        Returns:
+            Set of normalized location names
+        """
+        gazetteer_path = Path('data/gazetteer') / f'{gazetteer_type}.geojson'
+
+        try:
+            if not gazetteer_path.exists():
+                logger.debug(f"Gazetteer not found: {gazetteer_path}")
+                return set()
+
+            with open(gazetteer_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            names = set()
+            for feature in data.get('features', []):
+                props = feature.get('properties', {})
+                if 'name' in props:
+                    names.add(props['name'].lower())
+
+            logger.debug(f"Loaded {len(names)} {gazetteer_type} from gazetteer")
+            return names
+        except Exception as e:
+            logger.debug(f"Could not load gazetteer {gazetteer_type}: {e}")
+            return set()
+
     def _compile_patterns(self):
         """Compile regex patterns for spatial entity extraction."""
+        # Gatekeeper pattern: Quick check to reject obvious non-locations before geocoding
+        # Matches: Capitalized word(s) with optional numbers, umlauts, or address suffixes
+        # Rejects: All-caps, too many words, mixed case, no capitals
+        self.gatekeeper_pattern = re.compile(
+            r"^[A-ZÄÖÜ](?:[a-zäöüß\-'/]|\s[A-ZÄÖÜ])*(?:\s+\d+[a-z]?)?$"
+        )
+
         # Bebauungsplan (B-Plan) patterns
         self.bplan_pattern = re.compile(
             r'Bebauungsplan(?:\s+(?:Nr\.?|Nummer))?\s*([A-Z]?\d+[a-z]?(?:\s*[-/]\s*\d+)?)',
@@ -248,18 +319,34 @@ class SpatialProcessor:
         if pdf_url:
             base_fields['pdf_url'] = pdf_url
 
-        # 1. Smart NER extraction
+        # 1. Smart NER extraction with gazetteer coordinates (NO geocoding needed!)
         if self.location_extractor:
             try:
-                smart_locations = self.location_extractor.get_locations_from_text(text)
-                for loc in smart_locations:
-                    locations.append({
-                        'type': 'address',
-                        'text': loc,  # Use 'text' for consistency
-                        'value': loc,  # Keep 'value' for backward compatibility
-                        'method': 'ner',
-                        **base_fields
-                    })
+                # Use new method that returns coordinates from gazetteer
+                if hasattr(self.location_extractor, 'get_locations_with_coordinates'):
+                    smart_locations = self.location_extractor.get_locations_with_coordinates(text)
+                    for loc in smart_locations:
+                        locations.append({
+                            'type': 'address',
+                            'text': loc['name'],  # Use 'text' for consistency
+                            'value': loc['name'],  # Keep 'value' for backward compatibility
+                            'method': 'gazetteer',  # Mark as gazetteer-sourced
+                            'latitude': loc['latitude'],
+                            'longitude': loc['longitude'],
+                            'source': 'gazetteer',
+                            **base_fields
+                        })
+                else:
+                    # Fallback to old method if new one not available
+                    smart_locations = self.location_extractor.get_locations_from_text(text)
+                    for loc in smart_locations:
+                        locations.append({
+                            'type': 'address',
+                            'text': loc,  # Use 'text' for consistency
+                            'value': loc,  # Keep 'value' for backward compatibility
+                            'method': 'ner',
+                            **base_fields
+                        })
             except Exception as e:
                 logger.debug(f"Smart extraction failed: {e}")
 
@@ -316,17 +403,19 @@ class SpatialProcessor:
                     **base_fields
                 })
 
-        # 5. District extraction
-        for match in self.district_pattern.finditer(text):
-            district = match.group(1).strip()
-            if len(district) > 3:  # Filter out too short matches
-                locations.append({
-                    'type': 'district',
-                    'text': district,  # Use 'text' for consistency
-                    'value': district,  # Keep 'value' for backward compatibility
-                    'method': 'regex',
-                    **base_fields
-                })
+        # 5. District extraction (DISABLED: too many false positives without hardcoded district list)
+        # To enable: create hardcoded list of Augsburg's 42 districts (e.g., "Oberhausen", "Göggingen")
+        # and validate against it before adding to locations.
+        # for match in self.district_pattern.finditer(text):
+        #     district = match.group(1).strip()
+        #     if len(district) > 3:  # Filter out too short matches
+        #         locations.append({
+        #             'type': 'district',
+        #             'text': district,  # Use 'text' for consistency
+        #             'value': district,  # Keep 'value' for backward compatibility
+        #             'method': 'regex',
+        #             **base_fields
+        #         })
 
         # Deduplicate
         seen = set()
@@ -337,8 +426,115 @@ class SpatialProcessor:
                 seen.add(key)
                 unique_locations.append(loc)
 
-        logger.debug(f"Extracted {len(unique_locations)} locations from text")
-        return unique_locations
+        # Sanity check: filter out blocklisted and invalid locations
+        valid_locations = [loc for loc in unique_locations if self._is_valid_location(loc)]
+
+        if len(valid_locations) < len(unique_locations):
+            logger.debug(f"Filtered out {len(unique_locations) - len(valid_locations)} invalid locations")
+
+        # Log if we extracted an unusual number of locations BEFORE gazetteer filtering
+        if len(valid_locations) > 100:
+            paper_info = f" for paper {paper_id}" if paper_id else ""
+            logger.warning(f"⚠️  Extracted {len(valid_locations)} locations{paper_info} BEFORE gazetteer filter - potential extraction issue!")
+            if pdf_url:
+                logger.warning(f"   PDF URL: {pdf_url}")
+
+        # GAZETTEER FIREWALL: Only keep locations that exist in our street gazetteer
+        # This prevents wasting API calls on non-locations like "Arbeitsplatz", "Prozent", etc.
+        gazetteer_filtered = []
+        for loc in valid_locations:
+            loc_text = loc.get('text', '').lower()
+
+            # Skip very short texts that would match everything
+            if len(loc_text) < 5:
+                logger.debug(f"Filtered out too-short location: '{loc['text']}'")
+                continue
+
+            # Check if this location is in our gazetteer (exact match or very close)
+            if loc_text in self.streets_gazetteer:
+                gazetteer_filtered.append(loc)
+            else:
+                # Check for close matches (street must start with loc_text and be at most 10 chars longer)
+                found_match = False
+                for street in self.streets_gazetteer:
+                    street_lower = street.lower()
+                    # Allow match if location text is at least 60% of the street name
+                    min_match_len = max(5, int(len(street_lower) * 0.6))
+                    if len(loc_text) >= min_match_len and street_lower.startswith(loc_text):
+                        gazetteer_filtered.append(loc)
+                        found_match = True
+                        break
+
+                if not found_match:
+                    logger.debug(f"Filtered out non-gazetteer location: '{loc['text']}'")
+
+        if len(gazetteer_filtered) < len(valid_locations):
+            logger.debug(f"Gazetteer filter: {len(valid_locations)} → {len(gazetteer_filtered)} locations")
+
+        # Safety limit: cap at 50 locations per document to prevent runaway extraction
+        MAX_LOCATIONS_PER_PAPER = 50
+        if len(gazetteer_filtered) > MAX_LOCATIONS_PER_PAPER:
+            paper_info = f" for paper {paper_id}" if paper_id else ""
+            logger.warning(f"⚠️  Too many locations ({len(gazetteer_filtered)}){paper_info} - capping at {MAX_LOCATIONS_PER_PAPER}")
+            if pdf_url:
+                logger.warning(f"   PDF URL: {pdf_url}")
+            # Keep only the first N unique location names
+            seen_names = set()
+            capped_locations = []
+            for loc in gazetteer_filtered:
+                name = loc.get('text', '').lower()
+                if name not in seen_names:
+                    seen_names.add(name)
+                    capped_locations.append(loc)
+                if len(capped_locations) >= MAX_LOCATIONS_PER_PAPER:
+                    break
+            gazetteer_filtered = capped_locations
+
+        logger.debug(f"Extracted {len(gazetteer_filtered)} valid, gazetteer-verified locations from text")
+        return gazetteer_filtered
+
+    def _is_valid_location(self, location: Dict[str, Any]) -> bool:
+        """
+        Sanity check for extracted locations.
+
+        Args:
+            location: Location dict with 'text' field
+
+        Returns:
+            True if location passes validation checks
+        """
+        text = location.get('text', '').strip()
+
+        # GATEKEEPER: Quick format check before expensive operations
+        # Rejects obviously non-location text early (all-caps, lowercase start, weird chars)
+        if not self.gatekeeper_pattern.match(text):
+            return False
+
+        # Check length bounds
+        if len(text) < self.min_location_length:
+            return False
+        if len(text) > self.max_location_length:
+            return False
+
+        # Check blocklist (case-insensitive)
+        if text.lower() in self.blocklist:
+            return False
+
+        # Check if first word is in blocklist (catches "Programm..." etc)
+        first_word = text.split()[0].lower() if text.split() else ''
+        if first_word in self.blocklist:
+            return False
+
+        # Reject purely numeric or single-character locations
+        if text.replace(' ', '').isdigit() or len(text) == 1:
+            return False
+
+        # Reject locations with too many spaces (likely sentence fragments)
+        space_count = text.count(' ')
+        if space_count > 4 and location.get('type') not in ['bplan', 'flurnummer']:
+            return False
+
+        return True
 
     def _rate_limit(self):
         """Enforce rate limiting for geocoding requests."""
@@ -480,10 +676,18 @@ class SpatialProcessor:
             List of enriched location dictionaries with coordinates
         """
         results = []
+        gazetteer_count = 0
+        geocoded_count = 0
 
         logger.info(f"Geocoding {len(locations)} locations")
 
         for i, loc in enumerate(locations):
+            # Skip geocoding for locations that already have coordinates from gazetteer
+            if loc.get('source') == 'gazetteer' and loc.get('latitude') and loc.get('longitude'):
+                results.append(loc)
+                gazetteer_count += 1
+                continue
+
             # Use 'text' or fall back to 'value' for location name
             location_text = loc.get('text', loc.get('value', ''))
             result = self.geocode(location_text, loc.get('type', 'address'))
@@ -491,18 +695,19 @@ class SpatialProcessor:
             if result:
                 enriched = {**loc, **result}
                 results.append(enriched)
+                geocoded_count += 1
             else:
                 results.append(loc)
 
             # Save cache periodically
             if (i + 1) % save_cache_interval == 0:
                 self._save_cache()
-                logger.info(f"Geocoded {i + 1}/{len(locations)} locations")
+                logger.info(f"Processed {i + 1}/{len(locations)} locations ({gazetteer_count} from gazetteer, {geocoded_count} geocoded)")
 
         # Final cache save
         self._save_cache()
 
-        logger.info(f"Geocoding complete: {len(results)} results")
+        logger.info(f"Geocoding complete: {len(results)} results ({gazetteer_count} from gazetteer, {geocoded_count} geocoded)")
         return results
 
     def to_wkt(

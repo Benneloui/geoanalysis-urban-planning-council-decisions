@@ -101,11 +101,14 @@ class ParquetWriter:
         # Add city column
         df['city'] = city
 
-        # Extract year from date field
+        # Extract year and month from date field
         if 'date' in df.columns:
-            df['year'] = pd.to_datetime(df['date'], errors='coerce').dt.year
+            date_series = pd.to_datetime(df['date'], errors='coerce')
+            df['year'] = date_series.dt.year
+            df['month'] = date_series.dt.month
         else:
             df['year'] = datetime.now().year
+            df['month'] = datetime.now().month
 
         # Convert text columns to string type
         text_cols = ['full_text', 'id', 'name', 'reference', 'type']
@@ -655,8 +658,8 @@ class RDFWriter:
 
 
 def export_locations_for_map(
-    locations_parquet: str,
-    output_geojson: str,
+    papers_with_locations: List[Dict[str, Any]],
+    output_file: str,
     filter_city: Optional[str] = None
 ) -> Dict[str, Any]:
     """
@@ -664,11 +667,11 @@ def export_locations_for_map(
 
     Each feature contains:
     - Geometry (Point with coordinates)
-    - Properties: location info, paper name/date, PDF link
+    - Properties: location name, paper title/date, PDF link
 
     Args:
-        locations_parquet: Path to locations parquet file
-        output_geojson: Output GeoJSON file path
+        papers_with_locations: List of paper dicts with 'locations' field
+        output_file: Output GeoJSON file path
         filter_city: Filter by city (optional)
 
     Returns:
@@ -676,59 +679,79 @@ def export_locations_for_map(
 
     Example usage:
         geojson = export_locations_for_map(
-            "data/processed/augsburg_locations.parquet",
-            "data/output/locations.geojson",
+            papers_with_locations=papers_list,
+            output_file="data/processed/locations.geojson",
             filter_city="augsburg"
         )
     """
     import json
 
-    # Read locations
-    df = pd.read_parquet(locations_parquet)
-
-    if filter_city:
-        df = df[df['city'] == filter_city]
-
-    # Filter rows with coordinates
-    df = df[df['latitude'].notna() & df['longitude'].notna()]
-
-    logger.info(f"Exporting {len(df)} locations to GeoJSON")
-
     features = []
+    location_count = {}
 
-    for _, row in df.iterrows():
-        feature = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [float(row['longitude']), float(row['latitude'])]
-            },
-            "properties": {
-                "location_id": str(row.get('location_id', '')),
-                "location_type": str(row.get('location_type', '')),
-                "location_value": str(row.get('location_value', '')),
-                "paper_id": str(row.get('paper_id', '')),
-                "paper_name": str(row.get('paper_name', '')),
-                "paper_date": str(row.get('paper_date', '')),
-                "pdf_url": str(row.get('pdf_url', '')),
-                "display_name": str(row.get('display_name', '')),
-                "method": str(row.get('method', ''))
+    for paper in papers_with_locations:
+        # Skip if wrong city
+        if filter_city and paper.get('city') != filter_city:
+            continue
+
+        # Extract paper metadata
+        paper_id = paper.get('id', '')
+        paper_name = paper.get('name', paper.get('title', ''))
+        paper_date = paper.get('date', '')
+
+        # Get PDF URL (prefer auxiliaryFile if available)
+        pdf_url = ''
+        if paper.get('auxiliaryFile'):
+            files = paper['auxiliaryFile'] if isinstance(paper['auxiliaryFile'], list) else [paper['auxiliaryFile']]
+            if files:
+                pdf_url = files[0].get('accessUrl', '') if isinstance(files[0], dict) else str(files[0])
+        elif paper.get('mainFile'):
+            pdf_url = paper['mainFile'].get('accessUrl', '') if isinstance(paper['mainFile'], dict) else str(paper['mainFile'])
+
+        # Process each location in paper
+        for loc in paper.get('locations', []):
+            # Skip locations without coordinates
+            if not loc.get('latitude') or not loc.get('longitude'):
+                continue
+
+            loc_name = loc.get('name', '')
+
+            # Count occurrences
+            location_count[loc_name] = location_count.get(loc_name, 0) + 1
+
+            feature = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [float(loc['longitude']), float(loc['latitude'])]
+                },
+                "properties": {
+                    "location_name": loc_name,
+                    "paper_id": paper_id,
+                    "paper_title": paper_name,
+                    "paper_date": str(paper_date),
+                    "pdf_url": pdf_url,
+                    "source": loc.get('source', ''),
+                    "count": 1  # Will be aggregated if needed
+                }
             }
-        }
-        features.append(feature)
+            features.append(feature)
+
+    logger.info(f"Exporting {len(features)} location features to GeoJSON")
 
     geojson = {
         "type": "FeatureCollection",
         "features": features,
         "metadata": {
             "count": len(features),
+            "unique_locations": len(location_count),
             "city": filter_city,
             "generated_at": datetime.now().isoformat()
         }
     }
 
     # Write to file
-    output_path = Path(output_geojson)
+    output_path = Path(output_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, 'w', encoding='utf-8') as f:

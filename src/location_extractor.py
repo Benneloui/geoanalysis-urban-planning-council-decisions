@@ -2,20 +2,22 @@ import requests
 import spacy
 from thefuzz import process, fuzz
 import pandas as pd
+import json
 import os
 from pathlib import Path
 
 _FILE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = _FILE_DIR.parent
-DEFAULT_OSM_CACHE = PROJECT_ROOT / 'data-raw' / 'augsburg_streets.csv'
+DEFAULT_GAZETTEER = PROJECT_ROOT / 'data' / 'gazetteer' / 'streets.geojson'
 
 class AugsburgLocationExtractor:
-    def __init__(self, osm_cache_path=None):
-        # Nutze absoluten Pfad relativ zur Projektwurzel
-        self.osm_cache_path = str((Path(osm_cache_path).resolve() if osm_cache_path else DEFAULT_OSM_CACHE))
-        self.streets = self._load_or_fetch_osm_streets()
+    def __init__(self, gazetteer_path=None):
+        # Use the GeoJSON gazetteer instead of CSV
+        self.gazetteer_path = str((Path(gazetteer_path).resolve() if gazetteer_path else DEFAULT_GAZETTEER))
+        self.streets = self._load_gazetteer_streets()
+        self.street_coords = self._load_street_coordinates()
 
-        # Lade deutsches KI-Modell für Textverständnis
+        # Load German NLP model
         print("Lade spaCy NLP Modell...")
         try:
             self.nlp = spacy.load("de_core_news_sm")
@@ -23,41 +25,52 @@ class AugsburgLocationExtractor:
             print("⚠️ Modell nicht gefunden. Bitte ausführen: python -m spacy download de_core_news_sm")
             self.nlp = None
 
-    def _load_or_fetch_osm_streets(self):
-        """Holt die 'Ground Truth': Alle Straßennamen in Augsburg."""
-        if os.path.exists(self.osm_cache_path):
-            print(f"Lade Straßenverzeichnis aus Cache ({self.osm_cache_path})...")
+    def _load_gazetteer_streets(self):
+        """Load street names from GeoJSON gazetteer."""
+        if os.path.exists(self.gazetteer_path):
+            print(f"Lade Straßenverzeichnis aus Gazetteer ({self.gazetteer_path})...")
             try:
-                return pd.read_csv(self.osm_cache_path)['name'].dropna().tolist()
+                with open(self.gazetteer_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+
+                streets = []
+                for feature in data.get('features', []):
+                    props = feature.get('properties', {})
+                    if 'name' in props:
+                        streets.append(props['name'])
+
+                streets = sorted(list(set(streets)))  # Deduplicate and sort
+                print(f"✓ {len(streets)} Straßen gefunden und geladen.")
+                return streets
             except Exception as e:
-                print(f"⚠️ Cache konnte nicht gelesen werden ({e}) – lade neu")
+                print(f"⚠️ Gazetteer konnte nicht gelesen werden ({e})")
 
-        print("Lade Straßenverzeichnis frisch von OpenStreetMap (Overpass API)...")
-        # Query: Alle Straßen (highway) in der Relation Augsburg (admin_level=6)
-        query = """
-        [out:json];
-        area["name"="Augsburg"]["admin_level"="6"]->.searchArea;
-        (
-          way["highway"]["name"](area.searchArea);
-        );
-        out body;
-        """
-        try:
-            resp = requests.get("http://overpass-api.de/api/interpreter", params={'data': query})
-            data = resp.json()
-            streets = sorted(list(set([e['tags']['name'] for e in data['elements'] if 'tags' in e and 'name' in e['tags']])))
+        print("⚠️ Gazetteer nicht vorhanden. Bitte führen Sie aus: python scripts/00_setup_city.py")
+        return []
 
-            # Cache speichern
-            os.makedirs(os.path.dirname(self.osm_cache_path), exist_ok=True)
+    def _load_street_coordinates(self):
+        """Load street coordinates from GeoJSON for enrichment."""
+        coords = {}
+        if os.path.exists(self.gazetteer_path):
             try:
-                pd.DataFrame({'name': streets}).to_csv(self.osm_cache_path, index=False)
-                print(f"✓ {len(streets)} Straßen gefunden und gespeichert.")
+                with open(self.gazetteer_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+
+                for feature in data.get('features', []):
+                    props = feature.get('properties', {})
+                    geom = feature.get('geometry', {})
+
+                    if 'name' in props and geom.get('type') == 'Point':
+                        coords_list = geom.get('coordinates', [])
+                        if len(coords_list) == 2:
+                            coords[props['name'].lower()] = {
+                                'lon': coords_list[0],
+                                'lat': coords_list[1]
+                            }
             except Exception as e:
-                print(f"⚠️ Straßenverzeichnis konnte nicht gespeichert werden: {e}")
-            return streets
-        except Exception as e:
-            print(f"❌ Fehler bei OSM Abfrage: {e}")
-            return []
+                print(f"⚠️ Koordinaten konnten nicht geladen werden: {e}")
+
+        return coords
 
     def extract_candidates(self, text):
         """Schritt 1: Kandidaten finden (NER + Regex)"""
@@ -100,17 +113,29 @@ class AugsburgLocationExtractor:
 
         return valid_locations
 
-    def get_locations_from_text(self, text):
-        """Hauptfunktion für die Pipeline"""
+    def get_locations_with_coordinates(self, text):
+        """Return locations with pre-loaded coordinates from gazetteer (NO geocoding needed)"""
         if not isinstance(text, str) or not text:
             return []
 
         # 1. Kandidaten finden
         candidates = self.extract_candidates(text)
 
-        # 2. Validieren
+        # 2. Validieren und säubern
         if candidates:
-            return self.validate_and_clean(candidates)
+            cleaned_locations = self.validate_and_clean(candidates)
+
+            # 3. Füge Koordinaten aus Gazetteer hinzu (bereits geocodiert!)
+            locations_with_coords = []
+            for loc in cleaned_locations:
+                coords = self.street_coords.get(loc.lower())
+                locations_with_coords.append({
+                    'name': loc,
+                    'latitude': coords['lat'] if coords else None,
+                    'longitude': coords['lon'] if coords else None,
+                    'source': 'gazetteer'
+                })
+            return locations_with_coords
         return []
 
 # --- TESTBEREICH ---
