@@ -28,6 +28,7 @@ MANIFEST
 logs/
 vignettes/
 archive/
+presentation/
 
 # R-specific
 renv/library/
