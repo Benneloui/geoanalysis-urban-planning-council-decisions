@@ -29,6 +29,11 @@ logs/
 vignettes/
 archive/
 presentation/
+ENRICHMENT.md
+aboutOParlAugs.ipynb
+oparl_structure.json
+PIPELINE_WORKFLOW.md
+IMPLEMENTATION_SUMMARY.md
 
 # R-specific
 renv/library/
